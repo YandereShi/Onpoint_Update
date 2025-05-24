@@ -1699,7 +1699,7 @@ button, a, input, .card, .choice-card, .fab {
 
 .group-task-file-label {
     display: block;
-    margin: 10px 0 10px 0;
+    margin: 10px 0;
     font-weight: 600;
     color: var(--primary-color);
     cursor: pointer;
@@ -1725,4 +1725,17 @@ button, a, input, .card, .choice-card, .fab {
     border: 1px solid var(--border-color);
     background: var(--input-bg);
     color: var(--text-color);
+}
+
+#groupTaskDate,
+#groupTaskTime {
+    display: block;
+    width: 100%;
+    padding: 12px 15px;
+    margin: 10px 0;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--input-bg);
+    color: var(--text-color);
+    cursor: pointer;
 }

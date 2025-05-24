@@ -613,27 +613,31 @@ function showProjectPopup() {
         // Hide solo task input group, show file input for group
         document.querySelector('#projectPopup .task-section .task-input-group').style.display = 'none';
         document.getElementById('newTaskList').innerHTML = '';
-        // Insert file input if not already present
-        if (!document.getElementById('groupTaskFileInput')) {
-            const taskSection = document.querySelector('#projectPopup .task-section');
-            groupTaskFileInput.value = '';
-            groupTaskFileInput.style.display = 'block';
-            groupTaskFileLabel.style.display = 'block';
-            // Remove if already appended
-            if (groupTaskFileInput.parentNode) groupTaskFileInput.parentNode.removeChild(groupTaskFileInput);
-            if (groupTaskFileLabel.parentNode) groupTaskFileLabel.parentNode.removeChild(groupTaskFileLabel);
+
+        // Create date and time inputs for group file upload
+        const groupTaskDateInput = document.createElement('input');
+        groupTaskDateInput.type = 'date';
+        groupTaskDateInput.id = 'groupTaskDate';
+
+        const groupTaskTimeInput = document.createElement('input');
+        groupTaskTimeInput.type = 'time';
+        groupTaskTimeInput.id = 'groupTaskTime';
+
+        // Insert file input and datetime inputs if not already present
+        const taskSection = document.querySelector('#projectPopup .task-section');
+
+        if (!document.getElementById('groupTaskDate')) {
+            taskSection.appendChild(groupTaskDateInput);
+            taskSection.appendChild(groupTaskTimeInput);
             taskSection.appendChild(groupTaskFileLabel);
             taskSection.appendChild(groupTaskFileInput);
         }
+
+        // Reset inputs
         groupTaskFileInput.value = '';
+        groupTaskDateInput.value = '';
+        groupTaskTimeInput.value = '';
         groupTaskFileInput.disabled = false;
-    } else {
-        // Solo or not group admin: show normal task input
-        document.querySelector('#projectPopup .task-section .task-input-group').style.display = '';
-        if (document.getElementById('groupTaskFileInput')) {
-            groupTaskFileInput.style.display = 'none';
-            groupTaskFileLabel.style.display = 'none';
-        }
     }
     projectPopup.classList.add("show");
 }
@@ -646,18 +650,36 @@ function isCurrentUserAdmin() {
     return currentPlan !== null;
 }
 
-// Handle file upload for group admin project creation
+// Update file upload handler
 if (!groupTaskFileInput._listenerAdded) {
     groupTaskFileInput.addEventListener('change', function () {
         const file = this.files[0];
         if (!file) return;
+
         const projectName = projectNameInput.value.trim();
-        if (projectName === "") {
+        const dateInput = document.getElementById('groupTaskDate');
+        const timeInput = document.getElementById('groupTaskTime');
+
+        if (!projectName) {
             alert("Please enter a project name.");
             groupTaskFileInput.value = '';
             return;
         }
-        // Only 1 task per project for group admin
+
+        if (!dateInput.value || !timeInput.value) {
+            alert("Please select both date and time.");
+            return;
+        }
+
+        const selectedDateTime = new Date(`${dateInput.value}T${timeInput.value}`);
+        const now = new Date();
+
+        if (selectedDateTime < now) {
+            alert("Task date and time cannot be in the past!");
+            return;
+        }
+
+        // Create project card and save file
         const projectId = generateProjectId();
         let project = document.createElement("div");
         project.classList.add("card");
@@ -683,6 +705,7 @@ if (!groupTaskFileInput._listenerAdded) {
         progressText.textContent = '0%';
         project.appendChild(progressText);
 
+        // Add event listeners
         project.addEventListener("contextmenu", function(e) {
             e.preventDefault();
             selectedProject = project;
@@ -699,24 +722,22 @@ if (!groupTaskFileInput._listenerAdded) {
         projectContainer.insertBefore(project, noProjectsMsg);
         noProjectsMsg.style.display = "none";
 
-        // Save the file info as the only task
+        // Save the file info as task
         const reader = new FileReader();
         reader.onload = function (event) {
             const taskObj = {
                 text: file.name,
                 completed: false,
-                dueDate: new Date().toISOString().split('T')[0],
-                dueTime: '',
+                dueDate: dateInput.value,
+                dueTime: timeInput.value,
                 projectName: projectName,
-                fileContent: event.target.result // base64 for demo
+                fileContent: event.target.result
             };
             localStorage.setItem(projectId, JSON.stringify([taskObj]));
             closeProjectPopup();
             updateCalendarEvents();
         };
         reader.readAsDataURL(file);
-        // Disable input to prevent double submit
-        groupTaskFileInput.disabled = true;
     });
     groupTaskFileInput._listenerAdded = true;
 }
