@@ -48,6 +48,18 @@ const taskInput = document.getElementById('taskInput');
 const addTaskBtn = document.getElementById('addTaskBtn');
 const taskList = document.getElementById('taskList');
 
+// Add reference for group file input
+const groupTaskFileInput = document.createElement('input');
+groupTaskFileInput.type = 'file';
+groupTaskFileInput.id = 'groupTaskFileInput';
+groupTaskFileInput.style.display = 'none';
+
+// Add reference for group task file label
+const groupTaskFileLabel = document.createElement('label');
+groupTaskFileLabel.htmlFor = 'groupTaskFileInput';
+groupTaskFileLabel.className = 'group-task-file-label';
+groupTaskFileLabel.textContent = 'Upload Task File';
+
 let currentProjectCard = null;
 let selectedProject = null;
 let userType = null;
@@ -374,10 +386,9 @@ function showProfile() {
     profileDateJoined.textContent = new Date().toLocaleDateString();
 }
 
-function generateCalendar(date, tasks = []) {
+function generateCalendar(date) {
     const calendarDays = document.getElementById('calendarDays');
     const currentMonthYear = document.getElementById('currentMonthYear');
-
     calendarDays.innerHTML = '';
 
     const monthNames = ["January", "February", "March", "April", "May", "June",
@@ -389,7 +400,6 @@ function generateCalendar(date, tasks = []) {
     const daysInMonth = lastDay.getDate();
 
     const prevMonthDays = firstDay.getDay();
-
     const nextMonthDays = 6 - lastDay.getDay();
 
     const prevMonthLastDay = new Date(date.getFullYear(), date.getMonth(), 0).getDate();
@@ -400,34 +410,37 @@ function generateCalendar(date, tasks = []) {
         calendarDays.appendChild(dayElement);
     }
 
-    const today = new Date();
+    const allTasks = getAllTasks();
+
     for (let i = 1; i <= daysInMonth; i++) {
         const dayElement = document.createElement('div');
         const dateSpan = document.createElement('span');
         dateSpan.className = 'calendar-date';
         dateSpan.textContent = i;
+
+        const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+
+        const dayTasks = allTasks.filter(task => {
+            const taskDate = task.dueDate.split('T')[0];
+            return taskDate === dateStr;
+        });
+
+        if (dayTasks.length > 0) {
+            const taskCount = document.createElement('div');
+            taskCount.className = 'task-count';
+            taskCount.textContent = dayTasks.length;
+            dateSpan.appendChild(taskCount);
+        }
+
         dayElement.appendChild(dateSpan);
 
-        const dayTasks = tasks.filter(task => {
-            const taskDate = task.dueDate.split(' ')[0];
-            const taskDay = new Date(taskDate).getDate();
-            const taskMonth = new Date(taskDate).getMonth();
-            const taskYear = new Date(taskDate).getFullYear();
-            return taskDay === i && taskMonth === date.getMonth() && taskYear === date.getFullYear();
-        });
-
-        dayTasks.forEach(task => {
-            const eventDiv = document.createElement('div');
-            eventDiv.className = 'calendar-event';
-            eventDiv.textContent = `${task.text} (${task.projectName})`;
-            dayElement.appendChild(eventDiv);
-        });
-
-        if (date.getFullYear() === today.getFullYear() && 
-            date.getMonth() === today.getMonth() && 
-            i === today.getDate()) {
+        if (isToday(new Date(date.getFullYear(), date.getMonth(), i))) {
             dayElement.classList.add('today');
         }
+
+        dayElement.addEventListener('click', () => {
+            showDayTasks(i, date.getMonth(), date.getFullYear(), dayTasks);
+        });
         
         calendarDays.appendChild(dayElement);
     }
@@ -438,6 +451,100 @@ function generateCalendar(date, tasks = []) {
         dayElement.textContent = i;
         calendarDays.appendChild(dayElement);
     }
+}
+
+function getAllTasks() {
+    const allTasks = [];
+    const projectCards = document.querySelectorAll('.card');
+    
+    projectCards.forEach(card => {
+        const projectId = card.dataset.id;
+        const projectName = card.querySelector('.project-title').textContent;
+        
+        if (projectId) {
+            try {
+                const tasks = JSON.parse(localStorage.getItem(projectId) || '[]');
+                tasks.forEach(task => {
+                    if (task.dueDate) {
+                        allTasks.push({
+                            ...task,
+                            projectName: projectName
+                        });
+                    }
+                });
+            } catch (e) {
+                console.error('Error parsing tasks:', e);
+            }
+        }
+    });
+    
+    return allTasks;
+}
+
+function isToday(date) {
+    const today = new Date();
+    return date.getDate() === today.getDate() &&
+           date.getMonth() === today.getMonth() &&
+           date.getFullYear() === today.getFullYear();
+}
+
+function showDayTasks(day, month, year, tasks) {
+    const existingPopup = document.querySelector('.day-tasks-popup');
+    if (existingPopup) {
+        existingPopup.remove();
+    }
+
+    const popup = document.createElement('div');
+    popup.className = 'day-tasks-popup';
+
+    const monthNames = ["January", "February", "March", "April", "May", "June",
+                       "July", "August", "September", "October", "November", "December"];
+    
+    const tasksHTML = tasks.length > 0 
+        ? tasks.map(task => `
+            <div class="day-task-item">
+                <div>
+                    <div class="task-text ${task.completed ? 'completed' : ''}">${task.text}</div>
+                    <div class="day-task-project">${task.projectName}</div>
+                </div>
+                <div class="day-task-time">${task.dueTime || ''}</div>
+            </div>
+        `).join('')
+        : '<div style="text-align: center; padding: 20px;">No tasks for this day</div>';
+
+    popup.innerHTML = `
+        <div class="day-tasks-header">
+            <h3>${monthNames[month]} ${day}, ${year}</h3>
+            <button class="day-tasks-close">&times;</button>
+        </div>
+        <div class="day-tasks-list">
+            ${tasksHTML}
+        </div>
+    `;
+
+    document.body.appendChild(popup);
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'popup-backdrop';
+    document.body.appendChild(backdrop);
+
+    setTimeout(() => {
+        popup.classList.add('show');
+        backdrop.classList.add('show');
+    }, 10);
+
+    const closeBtn = popup.querySelector('.day-tasks-close');
+    const closePopup = () => {
+        popup.classList.remove('show');
+        backdrop.classList.remove('show');
+        setTimeout(() => {
+            popup.remove();
+            backdrop.remove();
+        }, 300);
+    };
+
+    closeBtn.addEventListener('click', closePopup);
+    backdrop.addEventListener('click', closePopup);
 }
 
 document.getElementById('dashboardLink').addEventListener('click', (e) => {
@@ -492,10 +599,126 @@ profileLogoutBtn.addEventListener("click", (e) => {
 let initialTasks = [];
 
 function showProjectPopup() {
-    projectNameInput.value = "";
-    initialTasks = [];
-    document.getElementById('newTaskList').innerHTML = '';
+    if (userType === 'solo') {
+        const projectCount = document.querySelectorAll('.card').length;
+        if (projectCount >= 2) {
+            alert("Free plan is limited to 2 projects. Please upgrade to create more projects.");
+            openModal();
+            return;
+        }
+    }
+
+    // Detect if group admin
+    if (userType === 'group' && isCurrentUserAdmin()) {
+        // Hide solo task input group, show file input for group
+        document.querySelector('#projectPopup .task-section .task-input-group').style.display = 'none';
+        document.getElementById('newTaskList').innerHTML = '';
+        // Insert file input if not already present
+        if (!document.getElementById('groupTaskFileInput')) {
+            const taskSection = document.querySelector('#projectPopup .task-section');
+            groupTaskFileInput.value = '';
+            groupTaskFileInput.style.display = 'block';
+            groupTaskFileLabel.style.display = 'block';
+            // Remove if already appended
+            if (groupTaskFileInput.parentNode) groupTaskFileInput.parentNode.removeChild(groupTaskFileInput);
+            if (groupTaskFileLabel.parentNode) groupTaskFileLabel.parentNode.removeChild(groupTaskFileLabel);
+            taskSection.appendChild(groupTaskFileLabel);
+            taskSection.appendChild(groupTaskFileInput);
+        }
+        groupTaskFileInput.value = '';
+        groupTaskFileInput.disabled = false;
+    } else {
+        // Solo or not group admin: show normal task input
+        document.querySelector('#projectPopup .task-section .task-input-group').style.display = '';
+        if (document.getElementById('groupTaskFileInput')) {
+            groupTaskFileInput.style.display = 'none';
+            groupTaskFileLabel.style.display = 'none';
+        }
+    }
     projectPopup.classList.add("show");
+}
+
+// Helper to check if current user is admin (for demo, only admins can create projects in group)
+function isCurrentUserAdmin() {
+    // For this demo, only allow project creation if adminChoice was selected before
+    // You may want to store a flag in localStorage/session for real apps
+    // Here, we assume if planChoicePage was used, user is admin
+    return currentPlan !== null;
+}
+
+// Handle file upload for group admin project creation
+if (!groupTaskFileInput._listenerAdded) {
+    groupTaskFileInput.addEventListener('change', function () {
+        const file = this.files[0];
+        if (!file) return;
+        const projectName = projectNameInput.value.trim();
+        if (projectName === "") {
+            alert("Please enter a project name.");
+            groupTaskFileInput.value = '';
+            return;
+        }
+        // Only 1 task per project for group admin
+        const projectId = generateProjectId();
+        let project = document.createElement("div");
+        project.classList.add("card");
+        project.dataset.created = new Date().toISOString();
+        project.dataset.id = projectId;
+
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'project-title';
+        titleDiv.textContent = projectName;
+        project.appendChild(titleDiv);
+
+        const bucketLines = document.createElement('div');
+        bucketLines.className = 'bucket-lines';
+        project.appendChild(bucketLines);
+
+        const bucketFill = document.createElement('div');
+        bucketFill.className = 'bucket-fill';
+        bucketFill.style.height = '0%';
+        project.appendChild(bucketFill);
+
+        const progressText = document.createElement('div');
+        progressText.className = 'progress-text';
+        progressText.textContent = '0%';
+        project.appendChild(progressText);
+
+        project.addEventListener("contextmenu", function(e) {
+            e.preventDefault();
+            selectedProject = project;
+            deletePopup.classList.add("show");
+        });
+
+        project.addEventListener("click", function() {
+            currentProjectCard = project;
+            projectDetailsTitle.textContent = projectName;
+            loadTasks(project.dataset.id);
+            projectDetailsPopup.classList.add('show');
+        });
+
+        projectContainer.insertBefore(project, noProjectsMsg);
+        noProjectsMsg.style.display = "none";
+
+        // Save the file info as the only task
+        const reader = new FileReader();
+        reader.onload = function (event) {
+            const taskObj = {
+                text: file.name,
+                completed: false,
+                dueDate: new Date().toISOString().split('T')[0],
+                dueTime: '',
+                projectName: projectName,
+                fileContent: event.target.result // base64 for demo
+            };
+            localStorage.setItem(projectId, JSON.stringify([taskObj]));
+            closeProjectPopup();
+            updateCalendarEvents();
+        };
+        reader.readAsDataURL(file);
+        // Disable input to prevent double submit
+        groupTaskFileInput.disabled = true;
+    });
+    groupTaskFileInput._listenerAdded = true;
 }
 
 document.getElementById('newTaskBtn').addEventListener('click', () => {
@@ -512,6 +735,14 @@ document.getElementById('newTaskBtn').addEventListener('click', () => {
         alert("Please fill in all task fields (task name, date, and time)");
         return;
     }
+
+    const selectedDateTime = new Date(`${dateInput.value}T${timeInput.value}`);
+    const now = new Date();
+    
+    if (selectedDateTime < now) {
+        alert("Task date and time cannot be in the past!");
+        return;
+    }
     
     addInitialTask(
         taskInput.value.trim(),
@@ -525,7 +756,7 @@ document.getElementById('newTaskBtn').addEventListener('click', () => {
 
 function addInitialTask(text, date, time) {
     const taskItem = document.createElement('div');
-    taskItem.className = 'task-item new-task'; // Add new-task class
+    taskItem.className = 'task-item new-task'; 
     
     const taskText = document.createElement('div');
     taskText.className = 'task-text';
@@ -565,9 +796,23 @@ function addInitialTask(text, date, time) {
 }
 
 document.getElementById('saveProjectBtn').addEventListener('click', () => {
+    // If group admin, do nothing (handled by file input)
+    if (userType === 'group' && isCurrentUserAdmin()) {
+        // If no file selected, prompt
+        if (!groupTaskFileInput.files[0]) {
+            alert("Please upload a task file.");
+        }
+        return;
+    }
+    // ...existing code for solo...
     const projectName = projectNameInput.value.trim();
     if (projectName === "") {
         alert("Please enter a project name.");
+        return;
+    }
+
+    if (initialTasks.length === 0) {
+        alert("Please add at least one task to create a project.");
         return;
     }
 
@@ -630,7 +875,7 @@ function closeProjectPopup() {
 
 function deleteProject() {
     if (selectedProject) {
-        // Remove tasks from localStorage when deleting project
+
         localStorage.removeItem(selectedProject.dataset.id);
         projectContainer.removeChild(selectedProject);
         selectedProject = null;
@@ -685,8 +930,7 @@ window.addEventListener('click', (e) => {
 function addTaskToList(text, completed = false, projectId, dueDate = null, dueTime = null) {
     const taskItem = document.createElement('div');
     taskItem.className = 'task-item';
-    
-    // Create checkbox and other elements
+
     const checkbox = document.createElement('div');
     checkbox.className = `task-checkbox${completed ? ' checked' : ''}`;
     
@@ -699,13 +943,11 @@ function addTaskToList(text, completed = false, projectId, dueDate = null, dueTi
     if (dueDate) {
         taskDateTime.textContent = `${dueDate} ${dueTime || ''}`;
     }
-    
-    // Add elements to task item
+
     taskItem.appendChild(checkbox);
     taskItem.appendChild(taskText);
     taskItem.appendChild(taskDateTime);
-    
-    // Add event listeners
+
     checkbox.addEventListener('click', () => {
         checkbox.classList.toggle('checked');
         taskText.classList.toggle('completed');
@@ -716,6 +958,25 @@ function addTaskToList(text, completed = false, projectId, dueDate = null, dueTi
     taskList.appendChild(taskItem);
     updateCalendarEvents();
     updateProjectProgress(projectId);
+}
+
+function saveTasks(projectId) {
+    const tasks = [];
+    taskList.querySelectorAll('.task-item').forEach(item => {
+        const dateTimeText = item.querySelector('.task-datetime').textContent;
+        let [date] = dateTimeText.split(' ');
+        
+        tasks.push({
+            text: item.querySelector('.task-text').textContent,
+            completed: item.querySelector('.task-checkbox').classList.contains('checked'),
+            dueDate: date,
+            dueTime: dateTimeText.split(' ')[1] || '',
+            projectName: currentProjectCard.querySelector('.project-title').textContent
+        });
+    });
+    
+    localStorage.setItem(projectId, JSON.stringify(tasks));
+    generateCalendar(currentDate); 
 }
 
 function updateProjectProgress(projectId) {
@@ -744,6 +1005,27 @@ function updateProjectProgress(projectId) {
         bucketFill.style.height = `${progress}%`;
         progressText.textContent = `${Math.round(progress)}%`;
     }
+}
+
+function updateCalendarEvents() {
+    const allTasks = [];
+    const projectIds = Array.from(document.querySelectorAll('.card')).map(card => card.dataset.id);
+    
+    projectIds.forEach(id => {
+        if (id) {
+            const tasks = JSON.parse(localStorage.getItem(id) || '[]');
+            if (tasks.length > 0) {
+                const projectName = document.querySelector(`.card[data-id="${id}"] .project-title`).textContent;
+                const processedTasks = tasks.map(task => ({
+                    ...task,
+                    projectName: projectName
+                }));
+                allTasks.push(...processedTasks);
+            }
+        }
+    });
+
+    generateCalendar(currentDate, allTasks);
 }
 
 document.addEventListener('touchstart', function() {}, {passive: true});
@@ -828,8 +1110,7 @@ projectContainer.addEventListener('click', function(e) {
     
     currentProjectCard = projectCard;
     projectDetailsTitle.textContent = projectCard.textContent;
-    
-    // Load existing tasks if any
+
     loadTasks(projectCard.dataset.id || generateProjectId());
     
     projectDetailsPopup.classList.add('show');
@@ -852,43 +1133,27 @@ function loadTasks(projectId) {
         );
     });
     currentProjectCard.dataset.id = projectId;
-    
-    // Hide the task input group after project is created
+
     document.querySelector('#projectDetailsPopup .task-input-group').style.display = 'none';
-}
-
-function saveTasks(projectId) {
-    const tasks = [];
-    taskList.querySelectorAll('.task-item').forEach(item => {
-        tasks.push({
-            text: item.querySelector('.task-text').textContent,
-            completed: item.querySelector('.task-checkbox').classList.contains('checked'),
-            dueDate: item.querySelector('.task-datetime').textContent,
-            projectName: currentProjectCard.textContent
-        });
-    });
-    localStorage.setItem(projectId, JSON.stringify(tasks));
-    updateCalendarEvents();
-}
-
-function updateCalendarEvents() {
-    const allTasks = [];
-    // Collect all tasks from all projects
-    const projectIds = Array.from(document.querySelectorAll('.card')).map(card => card.dataset.id);
-    projectIds.forEach(id => {
-        if (id) {
-            const tasks = JSON.parse(localStorage.getItem(id) || '[]');
-            allTasks.push(...tasks);
-        }
-    });
-    
-    generateCalendar(currentDate, allTasks);
 }
 
 addTaskBtn.addEventListener('click', () => {
     const text = taskInput.value.trim();
     const date = document.getElementById('taskDate').value;
     const time = document.getElementById('taskTime').value;
+    
+    if (!text || !date || !time) {
+        alert("Please fill in all task fields (task name, date, and time)");
+        return;
+    }
+
+    const selectedDateTime = new Date(`${date}T${time}`);
+    const now = new Date();
+    
+    if (selectedDateTime < now) {
+        alert("Task date and time cannot be in the past!");
+        return;
+    }
     
     if (text) {
         addTaskToList(text, false, currentProjectCard.dataset.id, date, time);
