@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OnPoint - Project Tracker</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="welcome-page" id="welcomePage">
+        <div class="welcome-container">
+            <h1>Welcome to OnPoint</h1>
+            <p>STAY ON TRACK, STAY ONPOINT</p>
+            <button class="get-started-btn" id="getStartedBtn">Get Started</button>
+        </div>
+    </div>
+
+    <div class="login-page" id="loginPage">
+        <div class="login-container" id="loginContainer">
+            <div class="form-container login-form">
+                <h2>Login</h2>
+                <input type="text" placeholder="Username" class="login-input" id="loginUsername">
+                <input type="password" placeholder="Password" class="login-input" id="loginPassword">
+                <button class="login-button" id="loginBtn">Login</button>
+            </div>
+            <div class="form-container register-form">
+                <h2>Register</h2>
+                <input type="text" placeholder="Username" class="login-input" id="registerUsername">
+                <input type="email" placeholder="Email" class="login-input" id="registerEmail">
+                <input type="password" placeholder="Password" class="login-input" id="registerPassword">
+                <button class="login-button" id="registerBtn">Register</button>
+            </div>
+            <div class="overlay">
+                <div class="overlay-content">
+                    <h2 id="overlayText">Welcome back to OnPoint!</h2>
+                    <p id="overlayDesc">Don't have an account?</p>
+                    <button class="toggle-btn" id="toggleBtn">Register</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="choice-page" id="choicePage">
+        <div class="choice-container">
+            <h2>How will you use OnPoint?</h2>
+            <div class="choice-cards">
+                <div class="choice-card" id="soloChoice">
+                    <i class="fas fa-user"></i>
+                    <h3>Solo</h3>
+                    <p>Perfect for individual users and students</p>
+                </div>
+                <div class="choice-card" id="groupChoice">
+                    <i class="fas fa-users"></i>
+                    <h3>Group</h3>
+                    <p>Great for teams and collaboration</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="choice-page" id="roleChoicePage">
+        <div class="choice-container">
+            <h2>What is your role?</h2>
+            <div class="choice-cards">
+                <div class="choice-card" id="adminChoice">
+                    <i class="fas fa-user-shield"></i>
+                    <h3>Admin</h3>
+                    <p>Create and manage the group</p>
+                </div>
+                <div class="choice-card" id="employeeChoice">
+                    <i class="fas fa-user-tie"></i>
+                    <h3>Employee</h3>
+                    <p>Join an existing group</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="choice-page" id="planChoicePage">
+        <div class="choice-container">
+            <h2>Choose Your Group Plan</h2>
+            <div class="choice-cards">
+                <div class="choice-card plan-card" data-plan="team-monthly">
+                    <h3>Team (100 users)</h3>
+                    <p class="price">P700 / Month</p>
+                    <p><i class="fas fa-check"></i> All basic features</p>
+                    <button class="choose-plan-btn">Choose</button>
+                </div>
+                <div class="choice-card plan-card" data-plan="team-yearly">
+                    <h3>Team (100 users)</h3>
+                    <p class="price">P8000 / Year</p>
+                    <p><i class="fas fa-check"></i> All basic features</p>
+                    <button class="choose-plan-btn">Choose</button>
+                </div>
+                <div class="choice-card plan-card" data-plan="enterprise">
+                    <h3>Enterprise (500 users)</h3>
+                    <p class="price">P10000 / Year</p>
+                    <p><i class="fas fa-check"></i> Premium support</p>
+                    <button class="choose-plan-btn">Choose</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="popup" id="codeEntryPopup">
+        <p>Please enter your admin's 7-digit code to join the group</p>
+        <input type="text" placeholder="7-digit code" class="login-input" id="groupCodeInput" maxlength="7" pattern="[A-Za-z0-9]{7}" title="Please enter exactly 7 alphanumeric characters">
+        <div class="popup-buttons">
+            <button class="yes-btn" id="submitCodeBtn">Next</button>
+            <button class="cancel-btn" onclick="closeCodeEntryPopup()">Cancel</button>
+        </div>
+    </div>
+
+    <div class="popup" id="groupCodePopup">
+        <h2>Your Group Code</h2>
+        <div class="code-display" id="groupCodeDisplay"></div>
+        <p>Share this code with your team members</p>
+        <div class="popup-buttons">
+            <button class="yes-btn" onclick="closeGroupCodePopup()">OK</button>
+        </div>
+    </div>
+
+    <div class="app-container" id="appContainer">
+        <div class="sidebar">
+            <h2>OnPoint</h2>
+            
+            <a href="#" id="dashboardLink"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a>
+            <a href="#" id="chatsLink"><i class="fas fa-comments"></i><span>Chats</span></a>
+            <a href="#" id="calendarLink"><i class="fas fa-calendar-alt"></i><span>Calendar</span></a>
+            <a href="#" id="tasksLink"><i class="fas fa-tasks"></i><span>Tasks</span></a>
+            <a href="#" id="myGroupLink"><i class="fas fa-users"></i><span>My Group</span></a>
+            <a href="#" id="profileLink"><i class="fas fa-user"></i><span>Profile</span></a>
+            <a href="#" id="upgradeLink"><i class="fas fa-crown"></i><span>Upgrade</span></a>
+            <a href="#" id="helpLink"><i class="fas fa-question-circle"></i><span>Help</span></a>
+        </div>
+        <div class="content">
+            <div class="topbar" id="dashboardTopbar">
+                <h1 id="contentTitle">My Projects</h1>
+                <div class="sort-container">
+                    <select id="sortSelect" class="sort-select">
+                        <option value="name-asc">Name (A-Z)</option>
+                        <option value="name-desc">Name (Z-A)</option>
+                        <option value="date-asc">Date (Oldest)</option>
+                        <option value="date-desc">Date (Newest)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="content-view" id="dashboardView">
+                <div class="grid-container" id="projectContainer">
+                    <p id="noProjectsMsg">No projects available. Click + to add.</p>
+                </div>
+            </div>
+            <div class="content-view" id="calendarView" style="display:none;">
+                <div class="calendar-container">
+                    <div class="calendar-header">
+                        <button id="prevMonth"><i class="fas fa-chevron-left"></i></button>
+                        <h3 id="currentMonthYear">Month Year</h3>
+                        <button id="nextMonth"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                    <div class="calendar-weekdays">
+                        <div>Sun</div>
+                        <div>Mon</div>
+                        <div>Tue</div>
+                        <div>Wed</div>
+                        <div>Thu</div>
+                        <div>Fri</div>
+                        <div>Sat</div>
+                    </div>
+                    <div class="calendar-days" id="calendarDays"></div>
+                </div>
+            </div>
+            <div class="content-view" id="profileView" style="display:none;">
+                <div class="profile-container">
+                    <div class="profile-header">
+                        <div class="profile-picture">
+                            <img src="profile.png" alt="Profile Picture" id="profileImg">
+                            <input type="file" id="profileUpload" accept="image/*" style="display: none;">
+                            <button class="change-picture-btn" id="changePictureBtn"><i class="fas fa-camera"></i> Change</button>
+                        </div>
+                    </div>
+                    
+                    <div class="profile-section">
+                        <h2 class="profile-title">Profile</h2>
+                        <h3>Name:</h3>
+                        <p id="profileName"></p>
+                        
+                        <h3>Email:</h3>
+                        <p id="profileEmail"></p>
+                        
+                        <h3>Date Joined:</h3>
+                        <p id="profileDateJoined"></p>
+                        
+                        <h3>Bio:</h3>
+                        <textarea id="profileBio" placeholder="Tell us about yourself..."></textarea>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h2>Settings</h2>
+                        
+                        <div class="setting-item">
+                            <span>Dark Mode:</span>
+                            <label class="theme-switch">
+                                <input type="checkbox" id="darkModeToggle">
+                                <div class="slider"></div>
+                            </label>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <span>Notification:</span>
+                            <label class="theme-switch">
+                                <input type="checkbox" id="notificationToggle">
+                                <div class="slider"></div>
+                            </label>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <span>Privacy (On - Your profile is public, Off - Anyone cant see your profile)</span>
+                            <div class="privacy-control">
+                                
+                                <label class="theme-switch">
+                                    <input type="checkbox" id="privacyToggle">
+                                    <div class="slider"></div>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <span>Change Password:</span>
+                            <button class="change-password-btn">Change Password</button>
+                        </div>
+                        
+                        <button class="logout-btn" id="profileLogoutBtn">Logout Account</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="fab" id="fabButton">+</div>
+
+        <div id="projectPopup" class="popup">
+            <h2>New Project</h2>
+            <input type="text" id="projectNameInput" placeholder="Project Name">
+            <div class="popup-buttons">
+                <button class="yes-btn">Create</button>
+                <button class="cancel-btn">Cancel</button>
+            </div>
+        </div>
+
+        <div id="deletePopup" class="popup">
+            <h2>Delete Project</h2>
+            <p>Are you sure you want to delete this project?</p>
+            <div class="popup-buttons">
+                <button class="delete-btn" onclick="deleteProject()">Delete</button>
+                <button class="cancel-btn" onclick="closeDeletePopup()">Cancel</button>
+            </div>
+        </div>
+        
+        <div id="subscriptionModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal()">&times;</span>
+                <h2>Choose Your Plan</h2>
+                <div class="plans" id="solo-plans">
+                    <div class="plan-card">
+                        <h3>Free</h3>
+                        <p><i class="fas fa-check"></i> 1 project folder</p>
+                        <p><i class="fas fa-check"></i> Basic features</p>
+                        <button class="free-btn">Get Started</button>
+                    </div>
+                    <div class="plan-card">
+                        <h3>Premium - Solo</h3>
+                        <p class="price">P350 / Month</p>
+                        <p><i class="fas fa-check"></i> Unlimited projects</p>
+                        <button class="buy-btn">Subscribe</button>
+                    </div>
+                    <div class="plan-card">
+                        <h3>Premium - Solo</h3>
+                        <p class="price">P4000 / Year</p>
+                        <p><i class="fas fa-check"></i> Unlimited projects</p>
+                        <button class="buy-btn">Subscribe</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="projectDetailsPopup" class="popup">
+        <h2 id="projectDetailsTitle"></h2>
+        <div class="task-section">
+            <div class="task-input-group">
+                <input type="text" id="taskInput" placeholder="Add a task...">
+                <button id="addTaskBtn"><i class="fas fa-plus"></i></button>
+            </div>
+            <div id="taskList" class="task-list">
+                <!-- Tasks will be added here dynamically -->
+            </div>
+        </div>
+        <div class="popup-buttons">
+            <button class="cancel-btn" id="cancelProjectDetailsBtn">Close</button>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
