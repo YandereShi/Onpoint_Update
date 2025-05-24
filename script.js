@@ -489,26 +489,112 @@ profileLogoutBtn.addEventListener("click", (e) => {
     }, 450);
 });
 
+let initialTasks = [];
+
 function showProjectPopup() {
     projectNameInput.value = "";
+    initialTasks = [];
+    document.getElementById('newTaskList').innerHTML = '';
     projectPopup.classList.add("show");
 }
 
-function closeProjectPopup() {
-    projectPopup.classList.remove("show");
+document.getElementById('newTaskBtn').addEventListener('click', () => {
+    const taskInput = document.getElementById('newTaskInput');
+    const dateInput = document.getElementById('newTaskDate');
+    const timeInput = document.getElementById('newTaskTime');
+    
+    if (initialTasks.length >= 5) {
+        alert("Maximum of 5 tasks allowed!");
+        return;
+    }
+    
+    if (!taskInput.value.trim() || !dateInput.value || !timeInput.value) {
+        alert("Please fill in all task fields (task name, date, and time)");
+        return;
+    }
+    
+    addInitialTask(
+        taskInput.value.trim(),
+        dateInput.value,
+        timeInput.value
+    );
+    taskInput.value = '';
+    dateInput.value = '';
+    timeInput.value = '';
+});
+
+function addInitialTask(text, date, time) {
+    const taskItem = document.createElement('div');
+    taskItem.className = 'task-item new-task'; // Add new-task class
+    
+    const taskText = document.createElement('div');
+    taskText.className = 'task-text';
+    taskText.textContent = text;
+
+    const taskDateTime = document.createElement('div');
+    taskDateTime.className = 'task-datetime';
+    if (date) {
+        taskDateTime.textContent = `${date} ${time || ''}`;
+    }
+    
+    const deleteBtn = document.createElement('div');
+    deleteBtn.className = 'task-delete';
+    deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+    
+    deleteBtn.addEventListener('click', () => {
+        const index = initialTasks.findIndex(t => t.text === text && t.dueDate === date);
+        if (index > -1) {
+            initialTasks.splice(index, 1);
+        }
+        taskItem.remove();
+    });
+    
+    taskItem.appendChild(taskText);
+    taskItem.appendChild(taskDateTime);
+    taskItem.appendChild(deleteBtn);
+    
+    document.getElementById('newTaskList').appendChild(taskItem);
+    
+    initialTasks.push({
+        text: text,
+        completed: false,
+        dueDate: date,
+        dueTime: time,
+        projectName: projectNameInput.value.trim()
+    });
 }
 
-function addProject() {
-    let projectName = projectNameInput.value.trim();
+document.getElementById('saveProjectBtn').addEventListener('click', () => {
+    const projectName = projectNameInput.value.trim();
     if (projectName === "") {
         alert("Please enter a project name.");
         return;
     }
 
+    const projectId = generateProjectId();
     let project = document.createElement("div");
     project.classList.add("card");
-    project.textContent = projectName;
     project.dataset.created = new Date().toISOString();
+    project.dataset.id = projectId;
+
+    const titleDiv = document.createElement('div');
+    titleDiv.className = 'project-title';
+    titleDiv.textContent = projectName;
+    project.appendChild(titleDiv);
+
+    const bucketLines = document.createElement('div');
+    bucketLines.className = 'bucket-lines';
+    project.appendChild(bucketLines);
+
+    const bucketFill = document.createElement('div');
+    bucketFill.className = 'bucket-fill';
+    bucketFill.style.height = '0%';
+    project.appendChild(bucketFill);
+
+    const progressText = document.createElement('div');
+    progressText.className = 'progress-text';
+    progressText.textContent = '0%';
+    project.appendChild(progressText);
 
     project.addEventListener("contextmenu", function(e) {
         e.preventDefault();
@@ -517,19 +603,38 @@ function addProject() {
     });
 
     project.addEventListener("click", function() {
-        console.log("Project clicked:", projectName);
+        currentProjectCard = project;
+        projectDetailsTitle.textContent = projectName;
+        loadTasks(project.dataset.id);
+        projectDetailsPopup.classList.add('show');
     });
 
     projectContainer.insertBefore(project, noProjectsMsg);
     noProjectsMsg.style.display = "none";
-    closeProjectPopup();
-}
 
+    if (initialTasks.length > 0) {
+        initialTasks = initialTasks.map(task => ({
+            ...task,
+            projectName: projectName
+        }));
+        localStorage.setItem(projectId, JSON.stringify(initialTasks));
+    }
+
+    closeProjectPopup();
+    updateCalendarEvents();
+});
+
+function closeProjectPopup() {
+    projectPopup.classList.remove("show");
+}
 
 function deleteProject() {
     if (selectedProject) {
+        // Remove tasks from localStorage when deleting project
+        localStorage.removeItem(selectedProject.dataset.id);
         projectContainer.removeChild(selectedProject);
         selectedProject = null;
+        updateCalendarEvents();
     }
     closeDeletePopup();
     if (projectContainer.children.length === 1) { 
@@ -577,25 +682,69 @@ window.addEventListener('click', (e) => {
     }
 });
 
-window.addEventListener('DOMContentLoaded', () => {
-    if (projectContainer.children.length === 1) {
-        const sampleProjects = ['Techno', 'Project 2', 'Project 3'];
-        sampleProjects.forEach(project => {
-            const projectElement = document.createElement('div');
-            projectElement.classList.add('card');
-            projectElement.textContent = project;
-            
-            projectElement.addEventListener('contextmenu', function(e) {
-                e.preventDefault();
-                selectedProject = projectElement;
-                deletePopup.classList.add('show');
-            });
-            
-            projectContainer.insertBefore(projectElement, noProjectsMsg);
-        });
-        noProjectsMsg.style.display = 'none';
+function addTaskToList(text, completed = false, projectId, dueDate = null, dueTime = null) {
+    const taskItem = document.createElement('div');
+    taskItem.className = 'task-item';
+    
+    // Create checkbox and other elements
+    const checkbox = document.createElement('div');
+    checkbox.className = `task-checkbox${completed ? ' checked' : ''}`;
+    
+    const taskText = document.createElement('div');
+    taskText.className = `task-text${completed ? ' completed' : ''}`;
+    taskText.textContent = text;
+
+    const taskDateTime = document.createElement('div');
+    taskDateTime.className = 'task-datetime';
+    if (dueDate) {
+        taskDateTime.textContent = `${dueDate} ${dueTime || ''}`;
     }
-});
+    
+    // Add elements to task item
+    taskItem.appendChild(checkbox);
+    taskItem.appendChild(taskText);
+    taskItem.appendChild(taskDateTime);
+    
+    // Add event listeners
+    checkbox.addEventListener('click', () => {
+        checkbox.classList.toggle('checked');
+        taskText.classList.toggle('completed');
+        saveTasks(projectId);
+        updateProjectProgress(projectId);
+    });
+    
+    taskList.appendChild(taskItem);
+    updateCalendarEvents();
+    updateProjectProgress(projectId);
+}
+
+function updateProjectProgress(projectId) {
+    const tasks = JSON.parse(localStorage.getItem(projectId) || '[]');
+    const totalTasks = tasks.length;
+    const completedTasks = tasks.filter(task => task.completed).length;
+    const progress = totalTasks ? (completedTasks / totalTasks) * 100 : 0;
+    
+    const projectCard = document.querySelector(`.card[data-id="${projectId}"]`);
+    if (projectCard) {
+        let progressText = projectCard.querySelector('.progress-text');
+        let bucketFill = projectCard.querySelector('.bucket-fill');
+        
+        if (!progressText) {
+            progressText = document.createElement('div');
+            progressText.className = 'progress-text';
+            bucketFill = document.createElement('div');
+            bucketFill.className = 'bucket-fill';
+            const bucketLines = document.createElement('div');
+            bucketLines.className = 'bucket-lines';
+            projectCard.appendChild(bucketLines);
+            projectCard.appendChild(bucketFill);
+            projectCard.appendChild(progressText);
+        }
+        
+        bucketFill.style.height = `${progress}%`;
+        progressText.textContent = `${Math.round(progress)}%`;
+    }
+}
 
 document.addEventListener('touchstart', function() {}, {passive: true});
 sortSelect.addEventListener('change', sortProjects);
@@ -635,8 +784,6 @@ document.getElementById('upgradeLink').addEventListener('click', (e) => {
     openModal();
 });
 fabButton.addEventListener("click", showProjectPopup);
-document.querySelector('#projectPopup .yes-btn').addEventListener('click', addProject);
-document.querySelector('#projectPopup .cancel-btn').addEventListener('click', closeProjectPopup);
 
 function sortProjects() {
     const projects = Array.from(document.querySelectorAll('.card'));
@@ -696,51 +843,18 @@ function loadTasks(projectId) {
     taskList.innerHTML = '';
     const tasks = JSON.parse(localStorage.getItem(projectId) || '[]');
     tasks.forEach(task => {
-        addTaskToList(task.text, task.completed, projectId, task.dueDate);
+        addTaskToList(
+            task.text, 
+            task.completed, 
+            projectId, 
+            task.dueDate || task.date,
+            task.dueTime || task.time
+        );
     });
     currentProjectCard.dataset.id = projectId;
-}
-
-function addTaskToList(text, completed = false, projectId, dueDate = null, dueTime = null) {
-    const taskItem = document.createElement('div');
-    taskItem.className = 'task-item';
     
-    const checkbox = document.createElement('div');
-    checkbox.className = `task-checkbox${completed ? ' checked' : ''}`;
-    
-    const taskText = document.createElement('div');
-    taskText.className = `task-text${completed ? ' completed' : ''}`;
-    taskText.textContent = text;
-
-    const taskDateTime = document.createElement('div');
-    taskDateTime.className = 'task-datetime';
-    if (dueDate) {
-        taskDateTime.textContent = `${dueDate} ${dueTime || ''}`;
-    }
-    
-    const deleteBtn = document.createElement('div');
-    deleteBtn.className = 'task-delete';
-    deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
-    
-    taskItem.appendChild(checkbox);
-    taskItem.appendChild(taskText);
-    taskItem.appendChild(taskDateTime);
-    taskItem.appendChild(deleteBtn);
-    
-    checkbox.addEventListener('click', () => {
-        checkbox.classList.toggle('checked');
-        taskText.classList.toggle('completed');
-        saveTasks(projectId);
-    });
-    
-    deleteBtn.addEventListener('click', () => {
-        taskItem.remove();
-        saveTasks(projectId);
-        updateCalendarEvents();
-    });
-    
-    taskList.appendChild(taskItem);
-    updateCalendarEvents();
+    // Hide the task input group after project is created
+    document.querySelector('#projectDetailsPopup .task-input-group').style.display = 'none';
 }
 
 function saveTasks(projectId) {
