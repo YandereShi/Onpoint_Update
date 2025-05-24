@@ -374,7 +374,7 @@ function showProfile() {
     profileDateJoined.textContent = new Date().toLocaleDateString();
 }
 
-function generateCalendar(date) {
+function generateCalendar(date, tasks = []) {
     const calendarDays = document.getElementById('calendarDays');
     const currentMonthYear = document.getElementById('currentMonthYear');
 
@@ -403,7 +403,25 @@ function generateCalendar(date) {
     const today = new Date();
     for (let i = 1; i <= daysInMonth; i++) {
         const dayElement = document.createElement('div');
-        dayElement.textContent = i;
+        const dateSpan = document.createElement('span');
+        dateSpan.className = 'calendar-date';
+        dateSpan.textContent = i;
+        dayElement.appendChild(dateSpan);
+
+        const dayTasks = tasks.filter(task => {
+            const taskDate = task.dueDate.split(' ')[0];
+            const taskDay = new Date(taskDate).getDate();
+            const taskMonth = new Date(taskDate).getMonth();
+            const taskYear = new Date(taskDate).getFullYear();
+            return taskDay === i && taskMonth === date.getMonth() && taskYear === date.getFullYear();
+        });
+
+        dayTasks.forEach(task => {
+            const eventDiv = document.createElement('div');
+            eventDiv.className = 'calendar-event';
+            eventDiv.textContent = `${task.text} (${task.projectName})`;
+            dayElement.appendChild(eventDiv);
+        });
 
         if (date.getFullYear() === today.getFullYear() && 
             date.getMonth() === today.getMonth() && 
@@ -678,12 +696,12 @@ function loadTasks(projectId) {
     taskList.innerHTML = '';
     const tasks = JSON.parse(localStorage.getItem(projectId) || '[]');
     tasks.forEach(task => {
-        addTaskToList(task.text, task.completed, projectId);
+        addTaskToList(task.text, task.completed, projectId, task.dueDate);
     });
     currentProjectCard.dataset.id = projectId;
 }
 
-function addTaskToList(text, completed = false, projectId) {
+function addTaskToList(text, completed = false, projectId, dueDate = null, dueTime = null) {
     const taskItem = document.createElement('div');
     taskItem.className = 'task-item';
     
@@ -693,6 +711,12 @@ function addTaskToList(text, completed = false, projectId) {
     const taskText = document.createElement('div');
     taskText.className = `task-text${completed ? ' completed' : ''}`;
     taskText.textContent = text;
+
+    const taskDateTime = document.createElement('div');
+    taskDateTime.className = 'task-datetime';
+    if (dueDate) {
+        taskDateTime.textContent = `${dueDate} ${dueTime || ''}`;
+    }
     
     const deleteBtn = document.createElement('div');
     deleteBtn.className = 'task-delete';
@@ -700,6 +724,7 @@ function addTaskToList(text, completed = false, projectId) {
     
     taskItem.appendChild(checkbox);
     taskItem.appendChild(taskText);
+    taskItem.appendChild(taskDateTime);
     taskItem.appendChild(deleteBtn);
     
     checkbox.addEventListener('click', () => {
@@ -711,9 +736,11 @@ function addTaskToList(text, completed = false, projectId) {
     deleteBtn.addEventListener('click', () => {
         taskItem.remove();
         saveTasks(projectId);
+        updateCalendarEvents();
     });
     
     taskList.appendChild(taskItem);
+    updateCalendarEvents();
 }
 
 function saveTasks(projectId) {
@@ -721,18 +748,40 @@ function saveTasks(projectId) {
     taskList.querySelectorAll('.task-item').forEach(item => {
         tasks.push({
             text: item.querySelector('.task-text').textContent,
-            completed: item.querySelector('.task-checkbox').classList.contains('checked')
+            completed: item.querySelector('.task-checkbox').classList.contains('checked'),
+            dueDate: item.querySelector('.task-datetime').textContent,
+            projectName: currentProjectCard.textContent
         });
     });
     localStorage.setItem(projectId, JSON.stringify(tasks));
+    updateCalendarEvents();
+}
+
+function updateCalendarEvents() {
+    const allTasks = [];
+    // Collect all tasks from all projects
+    const projectIds = Array.from(document.querySelectorAll('.card')).map(card => card.dataset.id);
+    projectIds.forEach(id => {
+        if (id) {
+            const tasks = JSON.parse(localStorage.getItem(id) || '[]');
+            allTasks.push(...tasks);
+        }
+    });
+    
+    generateCalendar(currentDate, allTasks);
 }
 
 addTaskBtn.addEventListener('click', () => {
     const text = taskInput.value.trim();
+    const date = document.getElementById('taskDate').value;
+    const time = document.getElementById('taskTime').value;
+    
     if (text) {
-        addTaskToList(text, false, currentProjectCard.dataset.id);
+        addTaskToList(text, false, currentProjectCard.dataset.id, date, time);
         saveTasks(currentProjectCard.dataset.id);
         taskInput.value = '';
+        document.getElementById('taskDate').value = '';
+        document.getElementById('taskTime').value = '';
     }
 });
 

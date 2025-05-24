@@ -994,7 +994,10 @@ input:checked + .slider:before {
 }
 
 .calendar-days div {
-    padding: 12px 0;
+    min-height: 80px;
+    display: flex;
+    flex-direction: column;
+    padding: 5px;
     text-align: center;
     border-radius: 8px;
     cursor: pointer;
@@ -1015,6 +1018,23 @@ input:checked + .slider:before {
     background: var(--primary-color);
     color: var(--button-text);
     font-weight: bold;
+}
+
+.calendar-event {
+    background: var(--primary-color);
+    color: var(--button-text);
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-size: 10px;
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.calendar-date {
+    margin-bottom: 5px;
 }
 
 .content-view {
@@ -1375,11 +1395,16 @@ button, a, input, .card, .choice-card, .fab {
 
 .task-input-group input {
     flex: 1;
+}
+
+.task-input-group input[type="date"],
+.task-input-group input[type="time"] {
     padding: 12px;
     border: 1px solid var(--border-color);
     border-radius: 8px;
     background: var(--input-bg);
     color: var(--text-color);
+    cursor: pointer;
 }
 
 .task-input-group button {
