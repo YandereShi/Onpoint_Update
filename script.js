@@ -99,24 +99,75 @@ toggleBtn.addEventListener("click", () => {
     }
 });
 
+// --- LocalStorage Register/Login Logic ---
+
+function getAccounts() {
+    return JSON.parse(localStorage.getItem('accounts') || '[]');
+}
+
+function saveAccounts(accounts) {
+    localStorage.setItem('accounts', JSON.stringify(accounts));
+}
+
+// Register
+registerBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    const username = document.getElementById("registerUsername").value.trim();
+    const email = document.getElementById("registerEmail").value.trim();
+    const password = document.getElementById("registerPassword").value.trim();
+
+    if (username === "" || email === "" || password === "") {
+        alert("Please fill in all fields");
+        return;
+    }
+
+    let accounts = getAccounts();
+    if (accounts.some(acc => acc.username === username)) {
+        alert("Username already exists!");
+        return;
+    }
+    if (accounts.some(acc => acc.email === email)) {
+        alert("Email already registered!");
+        return;
+    }
+
+    accounts.push({ username, email, password });
+    saveAccounts(accounts);
+
+    alert("Registration successful! Please log in.");
+    // Switch to login form
+    loginContainer.classList.remove("active");
+});
+
+// Login
 loginBtn.addEventListener("click", (e) => {
     e.preventDefault();
     const username = document.getElementById("loginUsername").value.trim();
     const password = document.getElementById("loginPassword").value.trim();
-    
+
     if (username === "" || password === "") {
         alert("Please enter both username and password");
         return;
     }
 
-    loginPage.classList.add("hide");
+    let accounts = getAccounts();
+    const user = accounts.find(acc => acc.username === username && acc.password === password);
 
+    if (!user) {
+        alert("Invalid username or password!");
+        return;
+    }
+
+    // Optionally, save current user info in localStorage
+    localStorage.setItem('currentUser', JSON.stringify(user));
+
+    // Continue to next page
+    loginPage.classList.add("hide");
     setTimeout(() => {
         loginPage.style.display = "none";
         choicePage.style.display = "flex";
         choicePage.style.opacity = "0";
         choicePage.style.transform = "translateY(20px)";
-        
         setTimeout(() => {
             choicePage.style.opacity = "1";
             choicePage.style.transform = "translateY(0)";
