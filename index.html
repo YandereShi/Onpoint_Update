@@ -131,7 +131,7 @@
             <a href="#" id="myGroupLink"><i class="fas fa-users"></i><span>My Group</span></a>
             <a href="#" id="profileLink"><i class="fas fa-user"></i><span>Profile</span></a>
             <a href="#" id="upgradeLink"><i class="fas fa-crown"></i><span>Upgrade</span></a>
-            <a href="#" id="helpLink"><i class="fas fa-question-circle"></i><span>Help</span></a>
+            <a href="#" id="feedbackLink"><i class="fas fa-comment"></i><span>Feedback</span></a>
         </div>
         <div class="content">
             <div class="topbar" id="dashboardTopbar">
@@ -357,6 +357,23 @@
             <button class="cancel-btn" id="cancelProjectDetailsBtn">Close</button>
         </div>
     </div>
+    <div id="feedbackPopup" class="popup">
+        <h2>Send us a Feedback</h2>
+        <textarea id="feedbackInput" placeholder="Tell us what you think..." class="feedback-input"></textarea>
+        <div class="popup-buttons">
+            <button class="yes-btn" id="sendFeedbackBtn">Send</button>
+            <button class="cancel-btn" onclick="closeFeedbackPopup()">Cancel</button>
+        </div>
+    </div>
+
+    <div id="feedbackNotification" class="notification">
+        <div class="notification-content">
+            <span>Thanks for your feedback!</span>
+            <button class="notification-close">&times;</button>
+        </div>
+    </div>
+
+    
     <script src="script.js"></script>
 </body>
 </html>

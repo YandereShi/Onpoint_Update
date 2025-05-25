@@ -50,7 +50,11 @@ const taskList = document.getElementById('taskList');
 const sidebar = document.querySelector('.sidebar');
 const myGroupView = document.getElementById('myGroupView');
 const myGroupLink = document.getElementById('myGroupLink');
-
+const feedbackLink = document.getElementById('feedbackLink');
+const feedbackPopup = document.getElementById('feedbackPopup');
+const feedbackInput = document.getElementById('feedbackInput');
+const sendFeedbackBtn = document.getElementById('sendFeedbackBtn');
+const feedbackNotification = document.getElementById('feedbackNotification');
 
 let currentProjectCard = null;
 let selectedProject = null;
@@ -833,18 +837,18 @@ function addInitialTask(text, date, time) {
 
 document.getElementById('saveProjectBtn').addEventListener('click', () => {
     const projectName = projectNameInput.value.trim();
-    
+
     if (userType === 'group') {
         const imageUpload = document.getElementById('imageUpload');
         const projectDate = document.getElementById('projectDate');
         const projectTime = document.getElementById('projectTime');
-        
+
         if (projectName === "") {
-            alert("Please enter a project title.");
+            alert("Please enter a project name.");
             return;
         }
         if (!imageUpload.files[0]) {
-            alert("Please upload an image.");
+            alert("Please upload a file.");
             return;
         }
         if (!projectDate.value || !projectTime.value) {
@@ -860,7 +864,7 @@ document.getElementById('saveProjectBtn').addEventListener('click', () => {
             return;
         }
 
-        // Create project card for admin
+        // Create project card for group
         const projectId = generateProjectId();
         let project = document.createElement("div");
         project.classList.add("card");
@@ -872,18 +876,25 @@ document.getElementById('saveProjectBtn').addEventListener('click', () => {
         titleDiv.textContent = projectName;
         project.appendChild(titleDiv);
 
+        // Store file as Blob URL
+        const file = imageUpload.files[0];
+        const fileUrl = URL.createObjectURL(file);
+
         // Store project data
         const projectData = {
             name: projectName,
             date: projectDate.value,
             time: projectTime.value,
-            image: imageUpload.files[0].name
+            fileUrl: fileUrl,
+            fileName: file.name
         };
         localStorage.setItem(projectId, JSON.stringify(projectData));
 
         projectContainer.insertBefore(project, noProjectsMsg);
         noProjectsMsg.style.display = "none";
         closeProjectPopup();
+        updateCalendarEvents(); // Update calendar after adding project
+        return;
     } else {
         // Existing solo user logic
         if (projectName === "") {
@@ -1197,49 +1208,51 @@ function generateProjectId() {
     return 'proj_' + Date.now();
 }
 
+// Update the loadTasks function to properly handle group project tasks
 function loadTasks(projectId) {
     taskList.innerHTML = '';
     const projectData = JSON.parse(localStorage.getItem(projectId) || '[]');
-    
+
     if (userType === 'group') {
-        // Clear existing content
+        // Hide solo task section
         document.querySelector('#projectDetailsPopup .task-section').style.display = 'none';
-        
-        // Create image container if not exists
-        let imageContainer = document.querySelector('.project-image-container');
-        if (!imageContainer) {
-            imageContainer = document.createElement('div');
-            imageContainer.className = 'project-image-container';
-            document.querySelector('#projectDetailsPopup').insertBefore(
-                imageContainer,
-                document.querySelector('#projectDetailsPopup .popup-buttons')
-            );
+
+        // Remove previous file container if exists
+        let fileContainer = document.querySelector('.project-file-container');
+        if (fileContainer) fileContainer.remove();
+
+        // Create file container
+        fileContainer = document.createElement('div');
+        fileContainer.className = 'project-file-container';
+        fileContainer.style.textAlign = 'center';
+        fileContainer.style.margin = '20px 0';
+
+        // File link for download and open
+        if (projectData.fileUrl && projectData.fileName) {
+            fileContainer.innerHTML = `
+                <div>
+                    <a href="${projectData.fileUrl}" download="${projectData.fileName}" class="image-action-btn" style="margin-bottom:10px;display:inline-block;">
+                        <i class="fas fa-download"></i> Download File
+                    </a>
+                    <a href="${projectData.fileUrl}" target="_blank" class="image-action-btn" style="margin-bottom:10px;display:inline-block;">
+                        <i class="fas fa-external-link-alt"></i> Open in New Tab
+                    </a>
+                </div>
+                <div class="project-datetime">
+                    <strong>Date:</strong> ${projectData.date} <strong>Time:</strong> ${projectData.time}
+                </div>
+            `;
+        } else {
+            fileContainer.innerHTML = `<div>No file uploaded.</div>`;
         }
 
-        // Update image container content
-        imageContainer.innerHTML = `
-            <img src="${projectData.imageData}" class="project-image" alt="Project Image">
-            <div class="image-actions">
-                <button class="image-action-btn" onclick="downloadImage('${projectId}')">
-                    <i class="fas fa-download"></i> Download
-                </button>
-                <button class="image-action-btn" onclick="openImageInNewTab('${projectId}')">
-                    <i class="fas fa-external-link-alt"></i> Open in New Tab
-                </button>
-            </div>
-            <div class="project-datetime">
-                <strong>Date:</strong> ${projectData.date} <strong>Time:</strong> ${projectData.time}
-            </div>
-        `;
+        // Insert before popup buttons
+        const popup = document.getElementById('projectDetailsPopup');
+        popup.insertBefore(fileContainer, popup.querySelector('.popup-buttons'));
+        return;
     } else {
         // Solo user view - show task list but hide input section
         document.querySelector('#projectDetailsPopup .task-section').style.display = 'block';
-        
-        // Hide the task input group for solo users viewing existing projects
-        const taskInputGroup = document.querySelector('#projectDetailsPopup .task-input-group');
-        if (taskInputGroup) {
-            taskInputGroup.style.display = 'none';
-        }
         
         const tasks = Array.isArray(projectData) ? projectData : [];
         tasks.forEach(task => {
@@ -1254,12 +1267,115 @@ function loadTasks(projectId) {
     }
 
     currentProjectCard.dataset.id = projectId;
-    sidebar.classList.add('disabled');
-    document.querySelectorAll('.card').forEach(card => {
-        card.style.pointerEvents = 'none';
-        card.style.opacity = '0.5';
-    });
 }
+
+// Update the getAllTasks function to handle both solo and group projects
+function getAllTasks() {
+    const allTasks = [];
+    const projectCards = document.querySelectorAll('.card');
+    
+    projectCards.forEach(card => {
+        const projectId = card.dataset.id;
+        const projectName = card.querySelector('.project-title').textContent;
+        
+        if (projectId) {
+            try {
+                const data = JSON.parse(localStorage.getItem(projectId) || '[]');
+                if (Array.isArray(data)) {
+                    // Solo project tasks
+                    data.forEach(task => {
+                        if (task.dueDate) {
+                            allTasks.push({
+                                ...task,
+                                projectName: projectName
+                            });
+                        }
+                    });
+                } else if (data.date) {
+                    // Group project task
+                    allTasks.push({
+                        text: data.name || 'Project Deadline',
+                        completed: false,
+                        dueDate: data.date,
+                        dueTime: data.time,
+                        projectName: projectName
+                    });
+                }
+            } catch (e) {
+                console.error('Error parsing tasks:', e);
+            }
+        }
+    });
+    
+    return allTasks;
+}
+
+// Update the saveProjectBtn event listener for group projects
+document.getElementById('saveProjectBtn').addEventListener('click', () => {
+    const projectName = projectNameInput.value.trim();
+    
+    if (userType === 'group') {
+        const imageUpload = document.getElementById('imageUpload');
+        const projectDate = document.getElementById('projectDate');
+        const projectTime = document.getElementById('projectTime');
+        
+        if (projectName === "") {
+            alert("Please enter a project name.");
+            return;
+        }
+        if (!imageUpload.files[0]) {
+            alert("Please upload an image.");
+            return;
+        }
+        if (!projectDate.value || !projectTime.value) {
+            alert("Please select both date and time.");
+            return;
+        }
+
+        // Check if date and time are not in the past
+        const selectedDateTime = new Date(`${projectDate.value}T${projectTime.value}`);
+        const now = new Date();
+        if (selectedDateTime < now) {
+            alert("Date and time cannot be in the past!");
+            return;
+        }
+
+        // Create project card for group
+        const projectId = generateProjectId();
+        let project = document.createElement("div");
+        project.classList.add("card");
+        project.dataset.created = new Date().toISOString();
+        project.dataset.id = projectId;
+
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'project-title';
+        titleDiv.textContent = projectName;
+        project.appendChild(titleDiv);
+
+        // Read the image file
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            // Store project data
+            const projectData = {
+                name: projectName,
+                date: projectDate.value,
+                time: projectTime.value,
+                imageData: e.target.result
+            };
+            localStorage.setItem(projectId, JSON.stringify(projectData));
+            
+            projectContainer.insertBefore(project, noProjectsMsg);
+            noProjectsMsg.style.display = "none";
+            closeProjectPopup();
+            updateCalendarEvents(); // Update calendar after adding project
+        };
+        reader.readAsDataURL(imageUpload.files[0]);
+        
+    } else {
+        // Existing solo project logic
+        // ... rest of the solo project code
+    }
+});
 
 function downloadImage(projectId) {
     const projectData = JSON.parse(localStorage.getItem(projectId));
@@ -1330,4 +1446,87 @@ document.getElementById('myGroupLink').addEventListener('click', (e) => {
         link.classList.remove('active');
     });
     e.currentTarget.classList.add('active');
+});
+
+feedbackLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    showFeedbackPopup();
+});
+
+function showFeedbackPopup() {
+    // Create and show backdrop
+    let backdrop = document.querySelector('.popup-backdrop');
+    if (!backdrop) {
+        backdrop = document.createElement('div');
+        backdrop.className = 'popup-backdrop';
+        document.body.appendChild(backdrop);
+    }
+    
+    feedbackPopup.classList.add('show');
+    backdrop.classList.add('show');
+    feedbackInput.value = '';
+    
+    // Disable sidebar and project cards
+    sidebar.classList.add('disabled');
+    document.querySelectorAll('.card').forEach(card => {
+        card.style.pointerEvents = 'none';
+        card.style.opacity = '0.5';
+    });
+    fabButton.classList.add('disabled');
+    fabButton.setAttribute('disabled', 'disabled');
+}
+
+function closeFeedbackPopup() {
+    const backdrop = document.querySelector('.popup-backdrop');
+    feedbackPopup.classList.remove('show');
+    if (backdrop) {
+        backdrop.classList.remove('show');
+        setTimeout(() => backdrop.remove(), 300);
+    }
+    
+    // Re-enable sidebar and project cards
+    sidebar.classList.remove('disabled');
+    document.querySelectorAll('.card').forEach(card => {
+        card.style.pointerEvents = 'auto';
+        card.style.opacity = '1';
+    });
+    fabButton.classList.remove('disabled');
+    fabButton.removeAttribute('disabled');
+}
+
+sendFeedbackBtn.addEventListener('click', () => {
+    if (feedbackInput.value.trim() === '') {
+        alert('Please enter your feedback before sending.');
+        return;
+    }
+    
+    // Here you would normally send the feedback to a server
+    // For now, we'll just show the thank you notification
+    closeFeedbackPopup();
+    showFeedbackNotification();
+    
+    // Clear the input
+    feedbackInput.value = '';
+});
+
+function showFeedbackNotification() {
+    feedbackNotification.classList.add('show');
+    
+    // Remove the notification after 5 seconds
+    setTimeout(() => {
+        hideFeedbackNotification();
+    }, 5000);
+}
+
+function hideFeedbackNotification() {
+    feedbackNotification.style.animation = 'slideOut 0.3s ease-out';
+    setTimeout(() => {
+        feedbackNotification.classList.remove('show');
+        feedbackNotification.style.animation = '';
+    }, 300);
+}
+
+// Add click event for notification close button
+document.querySelector('.notification-close').addEventListener('click', () => {
+    hideFeedbackNotification();
 });

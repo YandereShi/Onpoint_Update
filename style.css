@@ -638,10 +638,10 @@ body {
     padding: 30px;
     border-radius: 15px;
     box-shadow: 0 10px 30px var(--shadow-color);
-    z-index: 1000;
+    z-index: 2000; /* Ensure popup appears above other elements */
     color: var(--text-color);
     width: 90%;
-    max-width: 400px;
+    max-width: 500px;
     opacity: 0;
     transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
@@ -1873,4 +1873,78 @@ button, a, input, .card, .choice-card, .fab {
     margin: 20px 0;
     max-height: 300px;
     overflow-y: auto;
+}
+.feedback-input {
+    width: 100%;
+    min-height: 150px;
+    padding: 15px;
+    margin: 15px 0;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--input-bg);
+    color: var(--text-color);
+    resize: vertical;
+    font-family: inherit;
+    font-size: 14px;
+}
+
+.feedback-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(240, 193, 75, 0.3);
+}
+
+.notification {
+    display: none;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 2000;
+    animation: slideIn 0.3s ease-out;
+}
+
+.notification.show {
+    display: block;
+}
+
+.notification-content {
+    background: var(--primary-color);
+    color: var(--button-text);
+    padding: 15px 20px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.notification-close {
+    background: none;
+    border: none;
+    color: var(--button-text);
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0 5px;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
 }
