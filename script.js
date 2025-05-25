@@ -52,6 +52,7 @@ const sidebar = document.querySelector('.sidebar');
 let currentProjectCard = null;
 let selectedProject = null;
 let userType = null;
+let userRole = null; // Add this new variable to track admin/employee role
 let currentPlan = null;
 let currentDate = new Date();
 
@@ -209,6 +210,7 @@ adminChoice.addEventListener("click", () => {
 });
 
 employeeChoice.addEventListener("click", () => {
+    userRole = 'employee'; // Set role as employee
     showCodeEntryPopup();
 });
 
@@ -231,6 +233,7 @@ submitCodeBtn.addEventListener("click", (e) => {
     }
 
     userType = 'group';
+    // userRole is already set to 'employee' from employeeChoice click
     updateSidebar();
     
     closeCodeEntryPopup();
@@ -256,6 +259,7 @@ document.querySelectorAll('.choose-plan-btn').forEach(btn => {
     btn.addEventListener('click', function() {
         currentPlan = this.parentElement.getAttribute('data-plan');
         userType = 'group';
+        userRole = 'admin'; // Set role as admin for plan choosers
         updateSidebar();
         
         planChoicePage.classList.remove("show");
@@ -321,12 +325,20 @@ function updateSidebar() {
         myGroupLink.style.display = 'none';
         upgradeLink.style.display = 'flex';
         profileLink.style.display = 'flex';
+        fabButton.style.display = 'flex'; // Show FAB for solo users
     } else if (userType === 'group') {
         chatsLink.style.display = 'flex';
         tasksLink.style.display = 'none';
         myGroupLink.style.display = 'flex';
         upgradeLink.style.display = 'none';
         profileLink.style.display = 'flex';
+        
+        // Hide FAB for group employees, show for group admins
+        if (userRole === 'employee') {
+            fabButton.style.display = 'none';
+        } else {
+            fabButton.style.display = 'flex';
+        }
     }
 }
 
@@ -339,7 +351,13 @@ function showDashboard() {
     document.getElementById('calendarLink').classList.remove('active');
     document.getElementById('profileLink').classList.remove('active');
     dashboardTopbar.style.display = 'flex';
-    fabButton.style.display = 'flex';
+    
+    // Only show FAB if user has permission (not a group employee)
+    if (userType === 'solo' || (userType === 'group' && userRole === 'admin')) {
+        fabButton.style.display = 'flex';
+    } else {
+        fabButton.style.display = 'none';
+    }
 }
 
 function showCalendar() {
@@ -564,6 +582,7 @@ document.getElementById('nextMonth').addEventListener('click', () => {
 profileLogoutBtn.addEventListener("click", (e) => {
     e.preventDefault();
     userType = null;
+    userRole = null; // Reset role on logout
     currentPlan = null;
     
     appContainer.classList.remove("show");
@@ -1138,8 +1157,15 @@ function loadTasks(projectId) {
             </div>
         `;
     } else {
-        // Solo user view - existing task list logic
+        // Solo user view - show task list but hide input section
         document.querySelector('#projectDetailsPopup .task-section').style.display = 'block';
+        
+        // Hide the task input group for solo users viewing existing projects
+        const taskInputGroup = document.querySelector('#projectDetailsPopup .task-input-group');
+        if (taskInputGroup) {
+            taskInputGroup.style.display = 'none';
+        }
+        
         const tasks = Array.isArray(projectData) ? projectData : [];
         tasks.forEach(task => {
             addTaskToList(
