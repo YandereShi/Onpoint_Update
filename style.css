@@ -1311,6 +1311,55 @@ input:checked + .slider:before {
     box-shadow: 0 0 0 3px rgba(240, 193, 75, 0.3);
 }
 
+.project-image-container {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.project-image {
+    max-width: 100%;
+    max-height: 400px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px var(--shadow-color);
+    margin-bottom: 15px;
+}
+
+.image-actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin: 15px 0;
+}
+
+.image-action-btn {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 6px;
+    background: var(--primary-color);
+    color: var(--button-text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.image-action-btn:hover {
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+}
+
+.image-action-btn i {
+    font-size: 16px;
+}
+
+.project-datetime {
+    color: var(--text-color);
+    font-size: 14px;
+    margin-top: 10px;
+}
+
 @media (max-width: 768px) {
     .sidebar {
         width: 70px;

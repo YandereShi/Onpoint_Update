@@ -1105,25 +1105,74 @@ function generateProjectId() {
 
 function loadTasks(projectId) {
     taskList.innerHTML = '';
-    const tasks = JSON.parse(localStorage.getItem(projectId) || '[]');
-    tasks.forEach(task => {
-        addTaskToList(
-            task.text, 
-            task.completed, 
-            projectId, 
-            task.dueDate || task.date,
-            task.dueTime || task.time
-        );
-    });
+    const projectData = JSON.parse(localStorage.getItem(projectId) || '[]');
+    
+    if (userType === 'group') {
+        // Clear existing content
+        document.querySelector('#projectDetailsPopup .task-section').style.display = 'none';
+        
+        // Create image container if not exists
+        let imageContainer = document.querySelector('.project-image-container');
+        if (!imageContainer) {
+            imageContainer = document.createElement('div');
+            imageContainer.className = 'project-image-container';
+            document.querySelector('#projectDetailsPopup').insertBefore(
+                imageContainer,
+                document.querySelector('#projectDetailsPopup .popup-buttons')
+            );
+        }
+
+        // Update image container content
+        imageContainer.innerHTML = `
+            <img src="${projectData.imageData}" class="project-image" alt="Project Image">
+            <div class="image-actions">
+                <button class="image-action-btn" onclick="downloadImage('${projectId}')">
+                    <i class="fas fa-download"></i> Download
+                </button>
+                <button class="image-action-btn" onclick="openImageInNewTab('${projectId}')">
+                    <i class="fas fa-external-link-alt"></i> Open in New Tab
+                </button>
+            </div>
+            <div class="project-datetime">
+                <strong>Date:</strong> ${projectData.date} <strong>Time:</strong> ${projectData.time}
+            </div>
+        `;
+    } else {
+        // Solo user view - existing task list logic
+        document.querySelector('#projectDetailsPopup .task-section').style.display = 'block';
+        const tasks = Array.isArray(projectData) ? projectData : [];
+        tasks.forEach(task => {
+            addTaskToList(
+                task.text,
+                task.completed,
+                projectId,
+                task.dueDate || task.date,
+                task.dueTime || task.time
+            );
+        });
+    }
+
     currentProjectCard.dataset.id = projectId;
-
-    document.querySelector('#projectDetailsPopup .task-input-group').style.display = 'none';
-
     sidebar.classList.add('disabled');
     document.querySelectorAll('.card').forEach(card => {
         card.style.pointerEvents = 'none';
         card.style.opacity = '0.5';
     });
+}
+
+function downloadImage(projectId) {
+    const projectData = JSON.parse(localStorage.getItem(projectId));
+    const link = document.createElement('a');
+    link.href = projectData.imageData;
+    link.download = `project-${projectId}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function openImageInNewTab(projectId) {
+    const projectData = JSON.parse(localStorage.getItem(projectId));
+    window.open(projectData.imageData, '_blank');
 }
 
 addTaskBtn.addEventListener('click', () => {
