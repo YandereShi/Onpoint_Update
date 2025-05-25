@@ -241,6 +241,7 @@
         <div id="projectPopup" class="popup">
             <h2>New Project</h2>
             <input type="text" id="projectNameInput" placeholder="Project Title" class="project-title-input">
+            
             <div class="task-section">
                 <p class="task-limit-text">Add up to 5 initial tasks:</p>
                 <div class="task-input-group">
@@ -253,6 +254,21 @@
                     <!-- Tasks will be added here -->
                 </div>
             </div>
+
+            <div class="image-upload-section">
+                <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+                <button class="image-upload-btn" onclick="document.getElementById('imageUpload').click()">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    Upload Image
+                </button>
+                <img id="imagePreview" class="image-preview">
+                <div id="imageName" class="image-name"></div>
+                <div class="datetime-group">
+                    <input type="date" id="projectDate" class="project-date">
+                    <input type="time" id="projectTime" class="project-time">
+                </div>
+            </div>
+
             <div class="popup-buttons">
                 <button class="yes-btn" id="saveProjectBtn">Create Project</button>
                 <button class="cancel-btn" onclick="closeProjectPopup()">Cancel</button>
