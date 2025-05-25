@@ -1755,3 +1755,7 @@ button, a, input, .card, .choice-card, .fab {
     color: var(--text-color);
     cursor: pointer;
 }
+.group-task-file-label.file-selected {
+    background-color: var(--primary-color);
+    color: var(--button-text);
+}
