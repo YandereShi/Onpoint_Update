@@ -127,7 +127,7 @@ registerBtn.addEventListener("click", (e) => {
         return;
     }
     if (accounts.some(acc => acc.email === email)) {
-        alert("Email already registered!");
+        alert("Email already exists!");
         return;
     }
 
@@ -135,8 +135,14 @@ registerBtn.addEventListener("click", (e) => {
     saveAccounts(accounts);
 
     alert("Registration successful! Please log in.");
-    // Switch to login form
+
+    // Show login form after registration
     loginContainer.classList.remove("active");
+    
+    // Clear the registration form
+    document.getElementById("registerUsername").value = "";
+    document.getElementById("registerEmail").value = "";
+    document.getElementById("registerPassword").value = "";
 });
 
 // Login
