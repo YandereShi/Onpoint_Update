@@ -48,6 +48,9 @@ const taskInput = document.getElementById('taskInput');
 const addTaskBtn = document.getElementById('addTaskBtn');
 const taskList = document.getElementById('taskList');
 const sidebar = document.querySelector('.sidebar');
+const myGroupView = document.getElementById('myGroupView');
+const myGroupLink = document.getElementById('myGroupLink');
+
 
 let currentProjectCard = null;
 let selectedProject = null;
@@ -307,7 +310,6 @@ function generateRandomCode(length) {
 
 function updateSidebar() {
     const dashboardLink = document.getElementById('dashboardLink');
-    const chatsLink = document.getElementById('chatsLink');
     const calendarLink = document.getElementById('calendarLink');
     const tasksLink = document.getElementById('tasksLink');
     const myGroupLink = document.getElementById('myGroupLink');
@@ -320,14 +322,12 @@ function updateSidebar() {
     });
     
     if (userType === 'solo') {
-        chatsLink.style.display = 'none';
         tasksLink.style.display = 'none';
         myGroupLink.style.display = 'none';
         upgradeLink.style.display = 'flex';
         profileLink.style.display = 'flex';
-        fabButton.style.display = 'flex'; // Show FAB for solo users
+        fabButton.style.display = 'flex';
     } else if (userType === 'group') {
-        chatsLink.style.display = 'flex';
         tasksLink.style.display = 'none';
         myGroupLink.style.display = 'flex';
         upgradeLink.style.display = 'none';
@@ -556,17 +556,35 @@ function showDayTasks(day, month, year, tasks) {
 
 document.getElementById('dashboardLink').addEventListener('click', (e) => {
     e.preventDefault();
+    myGroupView.style.display = 'none';
+    myGroupLink.classList.remove('active');
     showDashboard();
 });
 
 document.getElementById('calendarLink').addEventListener('click', (e) => {
     e.preventDefault();
+    myGroupView.style.display = 'none';
+    myGroupLink.classList.remove('active');
     showCalendar();
 });
 
 document.getElementById('profileLink').addEventListener('click', (e) => {
     e.preventDefault();
+    myGroupView.style.display = 'none';
+    myGroupLink.classList.remove('active');
     showProfile();
+});
+
+document.getElementById('myGroupLink').addEventListener('click', (e) => {
+    e.preventDefault();
+    document.querySelectorAll('.content-view').forEach(view => {
+        view.style.display = 'none';
+    });
+    myGroupView.style.display = 'block';
+    document.querySelectorAll('.sidebar a').forEach(link => {
+        link.classList.remove('active');
+    });
+    e.currentTarget.classList.add('active');
 });
 
 document.getElementById('prevMonth').addEventListener('click', () => {
@@ -1243,4 +1261,16 @@ cancelProjectDetailsBtn.addEventListener('click', () => {
         card.style.pointerEvents = 'auto';
         card.style.opacity = '1';
     });
+});
+
+document.getElementById('myGroupLink').addEventListener('click', (e) => {
+    e.preventDefault();
+    document.querySelectorAll('.content-view').forEach(view => {
+        view.style.display = 'none';
+    });
+    document.getElementById('myGroupView').style.display = 'block';
+    document.querySelectorAll('.sidebar a').forEach(link => {
+        link.classList.remove('active');
+    });
+    e.currentTarget.classList.add('active');
 });
