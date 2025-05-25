@@ -606,10 +606,21 @@ function showProjectPopup() {
             openModal();
             return;
         }
-    }
 
-    // Detect if group admin
-    if (userType === 'group' && isCurrentUserAdmin()) {
+        // Show task input group for solo users
+        document.querySelector('#projectPopup .task-section .task-input-group').style.display = 'flex';
+        document.getElementById('newTaskList').innerHTML = '';
+        
+        // Hide group-specific inputs
+        const existingDateInput = document.getElementById('groupTaskDate');
+        const existingTimeInput = document.getElementById('groupTaskTime');
+        const existingFileLabel = document.querySelector('.group-task-file-label');
+        
+        if (existingDateInput) existingDateInput.remove();
+        if (existingTimeInput) existingTimeInput.remove();
+        if (existingFileLabel) existingFileLabel.remove();
+        if (groupTaskFileInput) groupTaskFileInput.remove();
+    } else if (userType === 'group' && isCurrentUserAdmin()) {
         // Hide solo task input group, show file input for group
         document.querySelector('#projectPopup .task-section .task-input-group').style.display = 'none';
         document.getElementById('newTaskList').innerHTML = '';
@@ -639,8 +650,32 @@ function showProjectPopup() {
         groupTaskTimeInput.value = '';
         groupTaskFileInput.disabled = false;
     }
+
+    // Disable sidebar links when popup is shown
+    document.querySelectorAll('.sidebar a').forEach(link => {
+        link.style.pointerEvents = 'none';
+        link.style.opacity = '0.5';
+    });
+
     projectPopup.classList.add("show");
+    initialTasks = []; // Reset initial tasks array
 }
+
+function closeProjectPopup() {
+    projectPopup.classList.remove("show");
+    
+    // Re-enable sidebar links when popup is closed
+    document.querySelectorAll('.sidebar a').forEach(link => {
+        link.style.pointerEvents = 'auto';
+        link.style.opacity = '1';
+    });
+}
+
+// Update cancel button event listener
+document.querySelector('#projectPopup .cancel-btn').addEventListener('click', (e) => {
+    e.preventDefault();
+    closeProjectPopup();
+});
 
 // Helper to check if current user is admin (for demo, only admins can create projects in group)
 function isCurrentUserAdmin() {
@@ -892,6 +927,12 @@ document.getElementById('saveProjectBtn').addEventListener('click', () => {
 
 function closeProjectPopup() {
     projectPopup.classList.remove("show");
+    
+    // Re-enable sidebar links when popup is closed
+    document.querySelectorAll('.sidebar a').forEach(link => {
+        link.style.pointerEvents = 'auto';
+        link.style.opacity = '1';
+    });
 }
 
 function deleteProject() {
@@ -934,9 +975,6 @@ window.addEventListener('click', (e) => {
     if (e.target === document.getElementById('subscriptionModal')) {
         closeModal();
     }
-    if (e.target === projectPopup) {
-        closeProjectPopup();
-    }
     if (e.target === deletePopup) {
         closeDeletePopup();
     }
@@ -946,6 +984,12 @@ window.addEventListener('click', (e) => {
     if (e.target === codeEntryPopup) {
         closeCodeEntryPopup();
     }
+});
+
+// Add popup backdrop click handler
+projectPopup.addEventListener('click', (e) => {
+    // Prevent clicks inside the popup from closing it
+    e.stopPropagation();
 });
 
 function addTaskToList(text, completed = false, projectId, dueDate = null, dueTime = null) {
