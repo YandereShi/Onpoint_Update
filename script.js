@@ -66,6 +66,70 @@ let userType = null;
 let currentPlan = null;
 let currentDate = new Date();
 
+// Gets file icon based on file extension
+function getFileIcon(fileName) {
+    const extension = fileName.split('.').pop().toLowerCase();
+    
+    // Map common file extensions to Font Awesome icons
+    const iconMap = {
+        'pdf': 'fa-file-pdf',
+        'doc': 'fa-file-word',
+        'docx': 'fa-file-word',
+        'xls': 'fa-file-excel',
+        'xlsx': 'fa-file-excel',
+        'ppt': 'fa-file-powerpoint',
+        'pptx': 'fa-file-powerpoint',
+        'txt': 'fa-file-alt',
+        'csv': 'fa-file-csv',
+        'jpg': 'fa-file-image',
+        'jpeg': 'fa-file-image',
+        'png': 'fa-file-image',
+        'gif': 'fa-file-image',
+        'zip': 'fa-file-archive',
+        'rar': 'fa-file-archive',
+        'js': 'fa-file-code',
+        'html': 'fa-file-code',
+        'css': 'fa-file-code',
+        'php': 'fa-file-code',
+        'py': 'fa-file-code'
+    };
+    
+    return iconMap[extension] || 'fa-file';
+}
+
+// Show image preview function
+function showImagePreview(src, title) {
+    const previewModal = document.createElement('div');
+    previewModal.className = 'image-preview-modal';
+    
+    const previewImage = document.createElement('img');
+    previewImage.src = src;
+    previewImage.alt = title;
+    
+    const closeBtn = document.createElement('button');
+    closeBtn.innerHTML = '&times;';
+    closeBtn.className = 'close-preview';
+    
+    previewModal.appendChild(closeBtn);
+    previewModal.appendChild(previewImage);
+    document.body.appendChild(previewModal);
+    
+    // Add animation class after a small delay for transition effect
+    setTimeout(() => previewModal.classList.add('show'), 10);
+    
+    closeBtn.addEventListener('click', () => {
+        previewModal.classList.remove('show');
+        setTimeout(() => previewModal.remove(), 300);
+    });
+    
+    // Close on click outside the image
+    previewModal.addEventListener('click', (e) => {
+        if (e.target === previewModal) {
+            closeBtn.click();
+        }
+    });
+}
+
 window.addEventListener('DOMContentLoaded', function() {
     loginPage.style.display = "none";
     choicePage.style.display = "none";
@@ -1136,11 +1200,30 @@ projectContainer.addEventListener('click', function(e) {
     if (!projectCard) return;
     
     currentProjectCard = projectCard;
-    projectDetailsTitle.textContent = projectCard.textContent;
-
-    loadTasks(projectCard.dataset.id || generateProjectId());
+    selectedProject = projectCard.dataset.id;
+    const projectTitle = projectCard.querySelector('.project-title').textContent;
     
+    projectDetailsTitle.textContent = projectTitle;
     projectDetailsPopup.classList.add('show');
+    
+    // Check if this is a group project with file
+    const storedTasks = localStorage.getItem(selectedProject);
+    const isGroupFileProject = userType === 'group' && storedTasks && 
+                              JSON.parse(storedTasks).some(task => task.fileContent);
+    
+    // Show/hide the add task input based on project type
+    const taskInputGroup = document.querySelector('#projectDetailsPopup .task-input-group');
+    if (taskInputGroup) {
+        if (isGroupFileProject) {
+            // Hide add task input for file-based group projects
+            taskInputGroup.style.display = 'none';
+        } else {
+            // Show add task input for regular projects
+            taskInputGroup.style.display = 'flex';
+        }
+    }
+    
+    loadTasks(selectedProject);
 });
 
 function generateProjectId() {
@@ -1149,19 +1232,90 @@ function generateProjectId() {
 
 function loadTasks(projectId) {
     taskList.innerHTML = '';
-    const tasks = JSON.parse(localStorage.getItem(projectId) || '[]');
-    tasks.forEach(task => {
-        addTaskToList(
-            task.text, 
-            task.completed, 
-            projectId, 
-            task.dueDate || task.date,
-            task.dueTime || task.time
-        );
-    });
-    currentProjectCard.dataset.id = projectId;
-
-    document.querySelector('#projectDetailsPopup .task-input-group').style.display = 'none';
+    const storedTasks = localStorage.getItem(projectId);
+    
+    if (storedTasks) {
+        const tasks = JSON.parse(storedTasks);
+        tasks.forEach(task => {
+            // Check if this is a group file task (has fileContent property)
+            if (userType === 'group' && task.fileContent) {
+                // Create a file display element instead of checkbox
+                const taskItem = document.createElement('div');
+                taskItem.className = 'task-item file-task-item';
+                
+                // Create file icon based on file type
+                const fileIcon = document.createElement('i');
+                const iconClass = getFileIcon(task.text);
+                fileIcon.className = `fas ${iconClass}`;
+                
+                // Create file name display
+                const fileText = document.createElement('span');
+                fileText.className = 'task-text file-name';
+                fileText.textContent = task.text;
+                
+                // Create download/open link
+                const fileLink = document.createElement('a');
+                fileLink.href = task.fileContent;
+                fileLink.className = 'file-link';
+                fileLink.target = '_blank';
+                fileLink.download = task.text;
+                fileLink.innerHTML = '<i class="fas fa-download"></i>';
+                fileLink.title = "Download file";
+                
+                // Create open link
+                const openLink = document.createElement('a');
+                openLink.href = task.fileContent;
+                openLink.className = 'file-link open-link';
+                openLink.target = '_blank';
+                openLink.innerHTML = '<i class="fas fa-external-link-alt"></i>';
+                openLink.title = "Open file in new tab";
+                
+                // Create due date display if available
+                let dueDateDisplay = '';
+                if (task.dueDate) {
+                    const dueDateTime = new Date(`${task.dueDate}T${task.dueTime || '00:00'}`);
+                    const formattedDate = dueDateTime.toLocaleDateString();
+                    const formattedTime = dueDateTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    dueDateDisplay = document.createElement('span');
+                    dueDateDisplay.className = 'task-due-date';
+                    dueDateDisplay.textContent = `Due: ${formattedDate}, ${formattedTime}`;
+                }
+                
+                // Add elements to task item
+                taskItem.appendChild(fileIcon);
+                taskItem.appendChild(fileText);
+                if (dueDateDisplay) {
+                    taskItem.appendChild(dueDateDisplay);
+                }
+                taskItem.appendChild(openLink);
+                taskItem.appendChild(fileLink);
+                
+                // Check if file is an image for preview
+                const isImage = /\.(jpg|jpeg|png|gif)$/i.test(task.text);
+                if (isImage) {
+                    const preview = document.createElement('div');
+                    preview.className = 'file-preview';
+                    
+                    const previewImg = document.createElement('img');
+                    previewImg.src = task.fileContent;
+                    previewImg.alt = task.text;
+                    
+                    preview.appendChild(previewImg);
+                    taskItem.appendChild(preview);
+                    
+                    // Add click handler to show larger preview
+                    preview.addEventListener('click', function() {
+                        showImagePreview(task.fileContent, task.text);
+                    });
+                }
+                
+                taskList.appendChild(taskItem);
+            } else {
+                // Regular task with checkbox (existing logic)
+                addTaskToList(task.text, task.completed, projectId, task.dueDate, task.dueTime);
+            }
+        });
+    }
 }
 
 addTaskBtn.addEventListener('click', () => {
