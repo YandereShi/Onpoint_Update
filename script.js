@@ -1215,7 +1215,11 @@ function loadTasks(projectId) {
 
     if (userType === 'group') {
         document.querySelector('#projectDetailsPopup .task-section').style.display = 'none';
-
+         sidebar.classList.add('disabled');
+        document.querySelectorAll('.card').forEach(card => {
+            card.classList.add('disabled');
+            card.style.pointerEvents = 'none';
+        });
         // Remove previous file container if exists
         let fileContainer = document.querySelector('.project-file-container');
         if (fileContainer) fileContainer.remove();
@@ -1591,4 +1595,15 @@ function showSubmissionPopup(projectId) {
 
 function closeSubmissionPopup() {
     document.getElementById('submissionPopup').classList.remove('show');
+}
+function closeProjectDetailsPopup() {
+    const popup = document.getElementById('projectDetailsPopup');
+    popup.classList.remove('show');
+
+    // Re-enable sidebar and project cards
+    sidebar.classList.remove('disabled');
+    document.querySelectorAll('.card').forEach(card => {
+        card.classList.remove('disabled');
+        card.style.pointerEvents = '';
+    });
 }
