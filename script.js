@@ -1557,35 +1557,43 @@ function showSubmissionPopup(projectId) {
 
     // Get employee names from My Group view
     const groupView = document.getElementById('myGroupView');
-    // Adjust the selector below to match your actual member card structure
     const memberCards = groupView.querySelectorAll('.member-card');
     const employees = [];
 
     memberCards.forEach(card => {
-        // Assuming employee name is in an h3 inside .member-card
         const nameElem = card.querySelector('h3');
-        // Assuming role is in an element with class .role
         const roleElem = card.querySelector('.role');
         if (nameElem && roleElem && roleElem.textContent.trim().toLowerCase() === 'employee') {
             employees.push(nameElem.textContent.trim());
         }
     });
 
-    // Fallback if no employees found
     if (employees.length === 0) {
         submissionList.innerHTML = '<div>No employees found in group.</div>';
     } else {
-        employees.forEach(empName => {
+        employees.forEach((empName, idx) => {
             const row = document.createElement('div');
             row.style.display = 'flex';
             row.style.alignItems = 'center';
             row.style.justifyContent = 'space-between';
             row.style.margin = '10px 0';
 
-            row.innerHTML = `
-                <span>${empName}</span>
-                <span style="color:red;font-size:20px;">&#10060;</span>
-            `;
+            if (idx === 2) { // Third employee (Rainier)
+                row.innerHTML = `
+                    <span>${empName}</span>
+                    <span style="display:flex;align-items:center;gap:8px;">
+                        <span style="color:green;font-size:20px;">&#10004;</span>
+                        <button class="image-action-btn" onclick="window.open('InfomanPeta.pdf', '_blank')">
+                            <i class="fas fa-file-pdf"></i> View File
+                        </button>
+                    </span>
+                `;
+            } else {
+                row.innerHTML = `
+                    <span>${empName}</span>
+                    <span style="color:red;font-size:20px;">&#10060;</span>
+                `;
+            }
             submissionList.appendChild(row);
         });
     }
