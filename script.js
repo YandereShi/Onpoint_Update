@@ -1211,11 +1211,117 @@ function generateProjectId() {
 // Update the loadTasks function to properly handle group project tasks
 function loadTasks(projectId) {
     taskList.innerHTML = '';
-    const projectData = JSON.parse(localStorage.getItem(projectId) || '[]');
+    const projectData = JSON.parse(localStorage.getItem(projectId) || '{}');
 
+    // GROUP EMPLOYEE: Assignment project
+    if (userType === 'group' && userRole === 'employee' && projectId === 'assignment_project') {
+        document.querySelector('#projectDetailsPopup .task-section').style.display = 'none';
+        sidebar.classList.add('disabled');
+        document.querySelectorAll('.card').forEach(card => {
+            card.classList.add('disabled');
+            card.style.pointerEvents = 'none';
+        });
+
+        // Remove previous file container if exists
+        let fileContainer = document.querySelector('.project-file-container');
+        if (fileContainer) fileContainer.remove();
+
+        fileContainer = document.createElement('div');
+        fileContainer.className = 'project-file-container';
+        fileContainer.style.textAlign = 'center';
+        fileContainer.style.margin = '20px 0';
+
+        // --- Show Admin's Assignment File ---
+        // If not already loaded, fetch assignment.pdf and store blob URL in localStorage
+        if (!projectData.fileUrl || !projectData.fileName) {
+            const pdfPath = 'assignment.pdf'; // Make sure this matches the exact filename and case
+projectData.fileUrl = pdfPath;
+projectData.fileName = 'assignment.pdf';
+localStorage.setItem(projectId, JSON.stringify(projectData));
+loadTasks(projectId);
+            return;
+        }
+
+        // Show admin's assignment file
+        fileContainer.innerHTML = `
+            <div>
+                <strong>Assignment File:</strong><br>
+                <a href="${projectData.fileUrl}" download="${projectData.fileName}" class="image-action-btn" style="margin-bottom:10px;display:inline-block;">
+                    <i class="fas fa-download"></i> Download Assignment
+                </a>
+                <a href="${projectData.fileUrl}" target="_blank" class="image-action-btn" style="margin-bottom:10px;display:inline-block;">
+                    <i class="fas fa-external-link-alt"></i> Open in New Tab
+                </a>
+            </div>
+            <div class="project-datetime">
+                <strong>Due:</strong> ${projectData.date || ''} ${projectData.time || ''}
+            </div>
+            <hr style="margin:20px 0;">
+        `;
+
+        // --- Show Submission Section ---
+        const submission = JSON.parse(localStorage.getItem('assignment_submission') || 'null');
+        if (submission && submission.fileName) {
+            fileContainer.innerHTML += `
+                <div>
+                    <strong>Your Submission:</strong><br>
+                    <a href="${submission.fileUrl}" download="${submission.fileName}" class="image-action-btn" style="margin-bottom:10px;display:inline-block;">
+                        <i class="fas fa-download"></i> Download Your File
+                    </a>
+                    <a href="${submission.fileUrl}" target="_blank" class="image-action-btn" style="margin-bottom:10px;display:inline-block;">
+                        <i class="fas fa-external-link-alt"></i> Open in New Tab
+                    </a>
+                </div>
+                <div class="project-datetime">
+                    <strong>Submitted:</strong> ${submission.fileName}
+                </div>
+            `;
+        } else {
+            // Show file input and submit button
+            fileContainer.innerHTML += `
+                <div>
+                    <input type="file" id="assignmentFileInput" accept=".pdf" style="margin-top:10px;">
+                    <button id="submitAssignmentBtn" class="yes-btn" style="margin-top:10px;">Submit File</button>
+                </div>
+            `;
+        }
+
+        const popup = document.getElementById('projectDetailsPopup');
+        popup.insertBefore(fileContainer, popup.querySelector('.popup-buttons'));
+
+        // Add event listener for submit button if not yet submitted
+        if (!submission || !submission.fileName) {
+            setTimeout(() => {
+                const submitBtn = document.getElementById('submitAssignmentBtn');
+                const fileInput = document.getElementById('assignmentFileInput');
+                if (submitBtn && fileInput) {
+                    submitBtn.onclick = function() {
+                        const file = fileInput.files[0];
+                        if (!file) {
+                            alert('Please select a file to submit.');
+                            return;
+                        }
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            localStorage.setItem('assignment_submission', JSON.stringify({
+                                fileUrl: e.target.result,
+                                fileName: file.name
+                            }));
+                            alert('Assignment submitted!');
+                            loadTasks(projectId); // Refresh view
+                        };
+                        reader.readAsDataURL(file);
+                    };
+                }
+            }, 100);
+        }
+        return;
+    }
+
+    // ...existing code for admin and solo...
     if (userType === 'group') {
         document.querySelector('#projectDetailsPopup .task-section').style.display = 'none';
-         sidebar.classList.add('disabled');
+        sidebar.classList.add('disabled');
         document.querySelectorAll('.card').forEach(card => {
             card.classList.add('disabled');
             card.style.pointerEvents = 'none';
@@ -1265,7 +1371,7 @@ function loadTasks(projectId) {
     } else {
         // Solo user view - show task list but hide input section
         document.querySelector('#projectDetailsPopup .task-section').style.display = 'block';
-        
+
         const tasks = Array.isArray(projectData) ? projectData : [];
         tasks.forEach(task => {
             addTaskToList(
@@ -1615,3 +1721,47 @@ function closeProjectDetailsPopup() {
         card.style.pointerEvents = '';
     });
 }
+function ensureAssignmentProjectForEmployee() {
+    // Only add if not already present
+    const projectId = 'assignment_project';
+    if (!localStorage.getItem(projectId)) {
+        const projectData = {
+            name: 'Assignment',
+            date: new Date().toISOString().slice(0, 10),
+            time: '23:59',
+            fileUrl: '', // No admin file for employee
+            fileName: ''
+        };
+        localStorage.setItem(projectId, JSON.stringify(projectData));
+    }
+    // Add the card to the dashboard if not present
+    if (!document.querySelector(`.card[data-id="${projectId}"]`)) {
+        let project = document.createElement("div");
+        project.classList.add("card");
+        project.dataset.created = new Date().toISOString();
+        project.dataset.id = projectId;
+
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'project-title';
+        titleDiv.textContent = 'Assignment';
+        project.appendChild(titleDiv);
+
+        projectContainer.insertBefore(project, noProjectsMsg);
+        noProjectsMsg.style.display = "none";
+
+        project.addEventListener("click", function() {
+            currentProjectCard = project;
+            projectDetailsTitle.textContent = 'Assignment';
+            loadTasks(projectId);
+            projectDetailsPopup.classList.add('show');
+        });
+    }
+}
+employeeChoice.addEventListener("click", () => {
+    userRole = 'employee'; // Set role as employee
+    showCodeEntryPopup();
+    // Add Assignment project after joining
+    setTimeout(() => {
+        ensureAssignmentProjectForEmployee();
+    }, 500);
+});
