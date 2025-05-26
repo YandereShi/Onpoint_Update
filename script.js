@@ -1244,9 +1244,8 @@ function loadTasks(projectId) {
         fileContainer.style.margin = '20px 0';
 
         // --- Show Admin's Assignment File ---
-        // If not already loaded, fetch assignment.pdf and store blob URL in localStorage
         if (!projectData.fileUrl || !projectData.fileName) {
-            const pdfPath = 'assignment.pdf'; // Make sure this matches the exact filename and case
+            const pdfPath = 'assignment.pdf';
             projectData.fileUrl = pdfPath;
             projectData.fileName = 'assignment.pdf';
             localStorage.setItem(projectId, JSON.stringify(projectData));
@@ -1288,13 +1287,64 @@ function loadTasks(projectId) {
                     <strong>Submitted:</strong> ${submission.fileName}
                 </div>
             `;
-        } 
-        // Removed file upload and submit button for EMPLOYEE
+        } else {
+            // Upload form for employee
+            fileContainer.innerHTML += `
+                <div style="margin-top:20px;">
+                    <input type="file" id="employeeAssignmentUpload" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" style="display:none;">
+                    <button class="image-upload-btn" id="employeeUploadBtn">
+                        <i class="fas fa-cloud-upload-alt"></i> Upload Your File
+                    </button>
+                    <span id="employeeFileName" style="display:block;margin-top:10px;"></span>
+                    <button class="yes-btn" id="employeeSubmitBtn" style="margin-top:10px;display:none;">Submit</button>
+                </div>
+            `;
+        }
 
         const popup = document.getElementById('projectDetailsPopup');
         popup.insertBefore(fileContainer, popup.querySelector('.popup-buttons'));
 
-        // No file upload/submit event for employee
+        // Upload logic
+        if (!submission || !submission.fileName) {
+            const uploadBtn = document.getElementById('employeeUploadBtn');
+            const fileInput = document.getElementById('employeeAssignmentUpload');
+            const fileNameSpan = document.getElementById('employeeFileName');
+            const submitBtn = document.getElementById('employeeSubmitBtn');
+            let selectedFile = null;
+
+            uploadBtn.onclick = () => fileInput.click();
+            fileInput.onchange = (e) => {
+                selectedFile = e.target.files[0];
+                if (selectedFile) {
+                    fileNameSpan.textContent = selectedFile.name;
+                    submitBtn.style.display = 'inline-block';
+                }
+            };
+            submitBtn.onclick = () => {
+                if (!selectedFile) {
+                    alert('Please select a file to upload.');
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    const blobUrl = URL.createObjectURL(new Blob([ev.target.result]));
+                    localStorage.setItem('assignment_submission', JSON.stringify({
+                        fileName: selectedFile.name,
+                        fileUrl: blobUrl
+                    }));
+                    // Make card green
+                    const card = document.querySelector('.card[data-id="assignment_project"]');
+                    if (card) card.style.background = '#7fe279';
+                    // Close popup
+                    closeProjectDetailsPopup();
+                };
+                reader.readAsArrayBuffer(selectedFile);
+            };
+        } else {
+            // Make card green if already submitted
+            const card = document.querySelector('.card[data-id="assignment_project"]');
+            if (card) card.style.background = '#7fe279';
+        }
         return;
     }
 
