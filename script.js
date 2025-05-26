@@ -1214,20 +1214,17 @@ function loadTasks(projectId) {
     const projectData = JSON.parse(localStorage.getItem(projectId) || '[]');
 
     if (userType === 'group') {
-        // Hide solo task section
         document.querySelector('#projectDetailsPopup .task-section').style.display = 'none';
 
         // Remove previous file container if exists
         let fileContainer = document.querySelector('.project-file-container');
         if (fileContainer) fileContainer.remove();
 
-        // Create file container
         fileContainer = document.createElement('div');
         fileContainer.className = 'project-file-container';
         fileContainer.style.textAlign = 'center';
         fileContainer.style.margin = '20px 0';
 
-        // File link for download and open
         if (projectData.fileUrl && projectData.fileName) {
             fileContainer.innerHTML = `
                 <div>
@@ -1246,7 +1243,18 @@ function loadTasks(projectId) {
             fileContainer.innerHTML = `<div>No file uploaded.</div>`;
         }
 
-        // Insert before popup buttons
+        // --- Add Submission Button for Admins ---
+        if (userRole === 'admin') {
+            const submissionBtn = document.createElement('button');
+            submissionBtn.textContent = 'View Submissions';
+            submissionBtn.className = 'yes-btn';
+            submissionBtn.style.marginTop = '20px';
+            submissionBtn.onclick = function() {
+                showSubmissionPopup(projectId);
+            };
+            fileContainer.appendChild(submissionBtn);
+        }
+
         const popup = document.getElementById('projectDetailsPopup');
         popup.insertBefore(fileContainer, popup.querySelector('.popup-buttons'));
         return;
@@ -1530,3 +1538,57 @@ function hideFeedbackNotification() {
 document.querySelector('.notification-close').addEventListener('click', () => {
     hideFeedbackNotification();
 });
+
+const groupEmployees = [
+    { name: "Employee 1", id: "emp1" },
+    { name: "Employee 2", id: "emp2" },
+    { name: "Employee 3", id: "emp3" }
+];
+
+// For demo: No one has submitted yet
+function showSubmissionPopup(projectId) {
+    const submissionPopup = document.getElementById('submissionPopup');
+    const submissionList = document.getElementById('submissionList');
+    submissionList.innerHTML = '';
+
+    // Get employee names from My Group view
+    const groupView = document.getElementById('myGroupView');
+    // Adjust the selector below to match your actual member card structure
+    const memberCards = groupView.querySelectorAll('.member-card');
+    const employees = [];
+
+    memberCards.forEach(card => {
+        // Assuming employee name is in an h3 inside .member-card
+        const nameElem = card.querySelector('h3');
+        // Assuming role is in an element with class .role
+        const roleElem = card.querySelector('.role');
+        if (nameElem && roleElem && roleElem.textContent.trim().toLowerCase() === 'employee') {
+            employees.push(nameElem.textContent.trim());
+        }
+    });
+
+    // Fallback if no employees found
+    if (employees.length === 0) {
+        submissionList.innerHTML = '<div>No employees found in group.</div>';
+    } else {
+        employees.forEach(empName => {
+            const row = document.createElement('div');
+            row.style.display = 'flex';
+            row.style.alignItems = 'center';
+            row.style.justifyContent = 'space-between';
+            row.style.margin = '10px 0';
+
+            row.innerHTML = `
+                <span>${empName}</span>
+                <span style="color:red;font-size:20px;">&#10060;</span>
+            `;
+            submissionList.appendChild(row);
+        });
+    }
+
+    submissionPopup.classList.add('show');
+}
+
+function closeSubmissionPopup() {
+    document.getElementById('submissionPopup').classList.remove('show');
+}
