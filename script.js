@@ -531,15 +531,27 @@ function getAllTasks() {
         
         if (projectId) {
             try {
-                const tasks = JSON.parse(localStorage.getItem(projectId) || '[]');
-                tasks.forEach(task => {
-                    if (task.dueDate) {
-                        allTasks.push({
-                            ...task,
-                            projectName: projectName
-                        });
-                    }
-                });
+                const data = JSON.parse(localStorage.getItem(projectId) || '[]');
+                if (Array.isArray(data)) {
+                    // Solo project tasks
+                    data.forEach(task => {
+                        if (task.dueDate) {
+                            allTasks.push({
+                                ...task,
+                                projectName: projectName
+                            });
+                        }
+                    });
+                } else if (data.date) {
+                    // Group project task
+                    allTasks.push({
+                        text: data.name || 'Project Deadline',
+                        completed: false,
+                        dueDate: data.date,
+                        dueTime: data.time,
+                        projectName: projectName
+                    });
+                }
             } catch (e) {
                 console.error('Error parsing tasks:', e);
             }
@@ -1235,10 +1247,10 @@ function loadTasks(projectId) {
         // If not already loaded, fetch assignment.pdf and store blob URL in localStorage
         if (!projectData.fileUrl || !projectData.fileName) {
             const pdfPath = 'assignment.pdf'; // Make sure this matches the exact filename and case
-projectData.fileUrl = pdfPath;
-projectData.fileName = 'assignment.pdf';
-localStorage.setItem(projectId, JSON.stringify(projectData));
-loadTasks(projectId);
+            projectData.fileUrl = pdfPath;
+            projectData.fileName = 'assignment.pdf';
+            localStorage.setItem(projectId, JSON.stringify(projectData));
+            loadTasks(projectId);
             return;
         }
 
@@ -1276,45 +1288,13 @@ loadTasks(projectId);
                     <strong>Submitted:</strong> ${submission.fileName}
                 </div>
             `;
-        } else {
-            // Show file input and submit button
-            fileContainer.innerHTML += `
-                <div>
-                    <input type="file" id="assignmentFileInput" accept=".pdf" style="margin-top:10px;">
-                    <button id="submitAssignmentBtn" class="yes-btn" style="margin-top:10px;">Submit File</button>
-                </div>
-            `;
-        }
+        } 
+        // Removed file upload and submit button for EMPLOYEE
 
         const popup = document.getElementById('projectDetailsPopup');
         popup.insertBefore(fileContainer, popup.querySelector('.popup-buttons'));
 
-        // Add event listener for submit button if not yet submitted
-        if (!submission || !submission.fileName) {
-            setTimeout(() => {
-                const submitBtn = document.getElementById('submitAssignmentBtn');
-                const fileInput = document.getElementById('assignmentFileInput');
-                if (submitBtn && fileInput) {
-                    submitBtn.onclick = function() {
-                        const file = fileInput.files[0];
-                        if (!file) {
-                            alert('Please select a file to submit.');
-                            return;
-                        }
-                        const reader = new FileReader();
-                        reader.onload = function(e) {
-                            localStorage.setItem('assignment_submission', JSON.stringify({
-                                fileUrl: e.target.result,
-                                fileName: file.name
-                            }));
-                            alert('Assignment submitted!');
-                            loadTasks(projectId); // Refresh view
-                        };
-                        reader.readAsDataURL(file);
-                    };
-                }
-            }, 100);
-        }
+        // No file upload/submit event for employee
         return;
     }
 
